@@ -1,0 +1,82 @@
+.fade-in {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* === Animation === */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === Cursor Styles === */
+
+/* 🔘 All Buttons */
+.fade-in button,
+.fade-in [type="button"],
+.fade-in [type="submit"],
+.fade-in [role="button"],
+.fade-in .btn,
+.fade-in .icon-button {
+  cursor: pointer;
+}
+
+/* ⛔ Disabled Buttons */
+.fade-in button:disabled,
+.fade-in [type="button"]:disabled,
+.fade-in [type="submit"]:disabled,
+.fade-in .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* 📝 Input Fields */
+.fade-in input[type="text"],
+.fade-in input[type="email"],
+.fade-in input[type="password"],
+.fade-in input[type="number"],
+.fade-in input[type="search"],
+.fade-in textarea {
+  cursor: text;
+}
+
+/* 🔄 Draggable Elements */
+.fade-in [draggable="true"] {
+  cursor: grab;
+}
+.fade-in [draggable="true"]:active {
+  cursor: grabbing;
+}
+
+/* 🧠 Help or Info Icons */
+.fade-in .help,
+.fade-in .tooltip,
+.fade-in .info-icon {
+  cursor: help;
+}
+
+/* 🔗 Anchor Links */
+.fade-in a,
+.fade-in .link {
+  cursor: pointer;
+}
+
+/* 📑 Select Dropdowns */
+.fade-in select,
+.fade-in .custom-select {
+  cursor: pointer;
+}
+
+/* 🛑 Fallback for Non-interactive Content */
+.fade-in * {
+  cursor: default;
+}
+.fade-in button {
+  cursor: pointer;
+}

@@ -1,0 +1,711 @@
+{
+  "info": {
+    "name": "CRM API Test Suite",
+    "_postman_id": "crm-api-2025-06-24T10:01:38.313188",
+    "description": "Postman collection for full CRM API testing.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register User",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Govind Ghosh\",\n  \"email\": \"govind@example.com\",\n  \"username\": \"govind123\",\n  \"password\": \"12345678\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/users/register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "register"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Login User",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"govind@example.com\",\n  \"password\": \"12345678\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/users/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "login"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Get Current User",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/users/me",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "me"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Logout User",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/users/logout",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "logout"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/users/refresh-token",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "refresh-token"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Change Password",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"oldPassword\": \"12345678\",\n  \"newPassword\": \"newpass123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/users/change-password",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "change-password"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Update Account",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Govind Updated\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/users/update-account",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "update-account"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Get Public Profile",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/users/profile/govind123",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "profile",
+            "govind123"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Create Sales Lead",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"leadName\": \"Test Lead\",\n  \"assignedRep\": \"{{user_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/sales",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "sales"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Sales Leads",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/sales",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "sales"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Update Sales Status",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"won\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/sales/{{leadId}}/status",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "sales",
+            "{{leadId}}",
+            "status"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Create Call Log",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"callType\": \"external\",\n  \"callPurpose\": \"support\",\n  \"staff\": \"{{user_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/telecom",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "telecom"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Calls",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/telecom",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "telecom"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Create Training Session",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"React Basics\",\n  \"trainer\": \"{{user_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/training",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "training"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Trainings",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/training",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "training"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Mark Attendance",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"present\",\n  \"shift\": \"morning\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/attendance",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "attendance"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Get My Attendance",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/attendance/me",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "attendance",
+            "me"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Create Ticket",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ticketTitle\": \"Broken Part\",\n  \"issueType\": \"repair\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/after-sales",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "after-sales"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Tickets",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/after-sales",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "after-sales"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Create HR Profile",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"employee\": \"{{user_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/hr",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "hr"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Submit Leave Request",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"from\": \"2025-07-01\",\n  \"to\": \"2025-07-03\",\n  \"reason\": \"Medical Leave\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/hr/{{hrId}}/leave-request",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "hr",
+            "{{hrId}}",
+            "leave-request"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Create Department",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Engineering\",\n  \"code\": \"ENG\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/departments",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "departments"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Departments",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/departments",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "departments"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Submit Job Application",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"applicantName\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"1234567890\",\n  \"position\": \"Developer\",\n  \"department\": \"{{departmentId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/job-applications",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "job-applications"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Applications",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/job-applications",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "job-applications"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Create Mining Task",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"datasetName\": \"Sales Analysis\",\n  \"assignedAnalyst\": \"{{user_id}}\",\n  \"miningType\": \"forecasting\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/data-mining",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "data-mining"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Mining Tasks",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {},
+        "url": {
+          "raw": "{{base_url}}/api/v1/data-mining",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "data-mining"
+          ]
+        },
+        "description": ""
+      },
+      "response": []
+    }
+  ]
+}
