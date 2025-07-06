@@ -1,8 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "../services/axios";
-import { toast } from "react-toastify";
 
-// ========== Async Thunks ==========
+// =================== THUNKS ===================
 
 // 1. Create Department
 export const createDepartment = createAsyncThunk(
@@ -17,7 +16,7 @@ export const createDepartment = createAsyncThunk(
   }
 );
 
-// 2. Get All Departments
+// 2. Fetch All Departments
 export const fetchAllDepartments = createAsyncThunk(
   "department/fetchAll",
   async (
@@ -27,8 +26,6 @@ export const fetchAllDepartments = createAsyncThunk(
     try {
       const params = new URLSearchParams({ page, limit, search, sortBy, sortOrder });
       const res = await axios.get(`/departments?${params}`);
-
-      // ⛏️ FIX: No `res.data.data`, it's directly res.data
       const { results, total, page: currentPage, limit: currentLimit } = res.data.data;
       return {
         departments: results,
@@ -107,8 +104,28 @@ export const removeDepartmentMember = createAsyncThunk(
   }
 );
 
-// ========== Initial State ==========
-const initialState = {
+// 8. Fetch All Employees in Department
+export const fetchEmployeesInDepartment = createAsyncThunk(
+  "department/fetchEmployeesInDepartment",
+  async (
+    { departmentId, page = 1, limit = 10, search = "", sortBy = "fullName", sortOrder = "asc" },
+    { rejectWithValue }
+  ) => {
+    try {
+      const params = new URLSearchParams({ page, limit, search, sortBy, sortOrder });
+      const res = await axios.get(`/departments/${departmentId}/employees?${params}`);
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Error fetching employees in department"
+      );
+    }
+  }
+);
+
+// =================== MAIN DEPARTMENT SLICE ===================
+
+const departmentInitialState = {
   departments: [],
   totalCount: 0,
   selectedDepartment: null,
@@ -120,10 +137,9 @@ const initialState = {
   deleteStatus: "idle",
 };
 
-// ========== Slice ==========
 const departmentSlice = createSlice({
   name: "department",
-  initialState,
+  initialState: departmentInitialState,
   reducers: {
     resetCreateStatus: (state) => {
       state.createStatus = "idle";
@@ -135,20 +151,18 @@ const departmentSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // CREATE
       .addCase(createDepartment.pending, (state) => {
         state.createStatus = "loading";
       })
       .addCase(createDepartment.fulfilled, (state, action) => {
         state.createStatus = "succeeded";
-        state.departments = [action.payload, ...(state.departments || [])]; // fix
+        state.departments = [action.payload, ...(state.departments || [])];
       })
       .addCase(createDepartment.rejected, (state, action) => {
         state.createStatus = "failed";
         state.createError = action.payload;
       })
 
-      // FETCH ALL
       .addCase(fetchAllDepartments.pending, (state) => {
         state.status = "loading";
       })
@@ -162,7 +176,6 @@ const departmentSlice = createSlice({
         state.error = action.payload;
       })
 
-      // GET BY ID
       .addCase(fetchDepartmentById.pending, (state) => {
         state.status = "loading";
       })
@@ -175,7 +188,6 @@ const departmentSlice = createSlice({
         state.error = action.payload;
       })
 
-      // UPDATE
       .addCase(updateDepartment.pending, (state) => {
         state.updateStatus = "loading";
       })
@@ -189,7 +201,6 @@ const departmentSlice = createSlice({
         state.error = action.payload;
       })
 
-      // DELETE
       .addCase(deleteDepartment.pending, (state) => {
         state.deleteStatus = "loading";
       })
@@ -202,13 +213,10 @@ const departmentSlice = createSlice({
         state.error = action.payload;
       })
 
-      // ASSIGN MEMBER
       .addCase(assignDepartmentMember.fulfilled, (state, action) => {
         const index = state.departments.findIndex((d) => d._id === action.payload._id);
         if (index !== -1) state.departments[index] = action.payload;
       })
-
-      // REMOVE MEMBER
       .addCase(removeDepartmentMember.fulfilled, (state, action) => {
         const index = state.departments.findIndex((d) => d._id === action.payload._id);
         if (index !== -1) state.departments[index] = action.payload;
@@ -216,5 +224,52 @@ const departmentSlice = createSlice({
   },
 });
 
+// =================== DEPARTMENT EMPLOYEES SLICE ===================
+
+const departmentEmployeesSlice = createSlice({
+  name: "departmentEmployees",
+  initialState: {
+    employees: [],
+    departmentMeta: null,
+    page: 1,
+    limit: 10,
+    total: 0,
+    empStatus: "idle",
+    empError: null,
+  },
+  reducers: {
+    clearEmployeesState: (state) => {
+      state.employees = [];
+      state.departmentMeta = null;
+      state.page = 1;
+      state.limit = 10;
+      state.total = 0;
+      state.empStatus = "idle";
+      state.empError = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchEmployeesInDepartment.pending, (state) => {
+        state.empStatus = "loading";
+      })
+      .addCase(fetchEmployeesInDepartment.fulfilled, (state, action) => {
+        state.empStatus = "succeeded";
+        state.employees = action.payload.results || [];
+        state.departmentMeta = action.payload.department || null;
+        state.page = action.payload.page || 1;
+        state.limit = action.payload.limit || 10;
+        state.total = action.payload.total || 0;
+      })
+      .addCase(fetchEmployeesInDepartment.rejected, (state, action) => {
+        state.empStatus = "failed";
+        state.empError = action.payload;
+      });
+  },
+});
+
 export const { resetCreateStatus, clearSelectedDepartment } = departmentSlice.actions;
-export default departmentSlice.reducer;
+export const { clearEmployeesState } = departmentEmployeesSlice.actions;
+
+export const departmentReducer = departmentSlice.reducer;
+export const departmentEmployeesReducer = departmentEmployeesSlice.reducer;
