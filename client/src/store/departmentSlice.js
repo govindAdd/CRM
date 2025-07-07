@@ -105,7 +105,7 @@ export const removeDepartmentMember = createAsyncThunk(
 );
 
 // 8. Fetch All Employees in Department
-export const fetchEmployeesInDepartment = createAsyncThunk(
+export const fetchEmployeesInDepartment  = createAsyncThunk(
   "department/fetchEmployeesInDepartment",
   async (
     { departmentId, page = 1, limit = 10, search = "", sortBy = "fullName", sortOrder = "asc" },
@@ -217,6 +217,7 @@ const departmentSlice = createSlice({
         const index = state.departments.findIndex((d) => d._id === action.payload._id);
         if (index !== -1) state.departments[index] = action.payload;
       })
+
       .addCase(removeDepartmentMember.fulfilled, (state, action) => {
         const index = state.departments.findIndex((d) => d._id === action.payload._id);
         if (index !== -1) state.departments[index] = action.payload;
@@ -268,8 +269,11 @@ const departmentEmployeesSlice = createSlice({
   },
 });
 
+// =================== EXPORTS ===================
+
 export const { resetCreateStatus, clearSelectedDepartment } = departmentSlice.actions;
 export const { clearEmployeesState } = departmentEmployeesSlice.actions;
 
 export const departmentReducer = departmentSlice.reducer;
 export const departmentEmployeesReducer = departmentEmployeesSlice.reducer;
+
