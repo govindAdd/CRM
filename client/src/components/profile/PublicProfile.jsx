@@ -6,7 +6,7 @@ import Skeleton from "react-loading-skeleton";
 import 'react-loading-skeleton/dist/skeleton.css';
 import { toast } from "react-toastify";
 import { QRCodeSVG } from "qrcode.react";
-import api from "../services/axios";
+import api from "../../services/axios";
 import { Mail, Phone, Building2, BadgeInfo } from "lucide-react";
 
 const InfoItem = ({ icon: Icon, label, value }) => (

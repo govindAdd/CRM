@@ -11,8 +11,8 @@ import Layout from "../layouts/Layout";
 import { fetchAllUsers } from "../store/userSlice";
 import { useCurrentUser } from "../hooks/user/useCurrentUser";
 import { useAllUsers } from "../hooks/user/useAllUsers";
-import UserProfileCard from "../components/UserProfileCard";
-import AllUsersList from "../components/AllUsersList";
+import UserProfileCard from "../components/profile/UserProfileCard";
+import AllUsersList from "../components/profile/AllUsersList";
 
 const USERS_PER_PAGE = 5;
 

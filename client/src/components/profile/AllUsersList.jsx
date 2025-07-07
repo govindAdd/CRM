@@ -1,8 +1,8 @@
 import React, { useState, useRef } from "react";
 import { FiEdit2, FiCheck, FiX, FiTrash2 } from "react-icons/fi";
 import { FaShieldAlt } from "react-icons/fa";
-import { useDeleteUser } from "../hooks/user/useDeleteUser";
-import { useUpdateUserRole } from "../hooks/user/useUpdateUserRole";
+import { useDeleteUser } from "../../hooks/user/useDeleteUser";
+import { useUpdateUserRole } from "../../hooks/user/useUpdateUserRole";
 
 const VALID_ROLES = ["admin", "employee", "manager", "hr", "superadmin", "user", "head"];
 

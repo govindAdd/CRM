@@ -9,11 +9,10 @@ import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
 import { PiIdentificationBadgeLight } from "react-icons/pi";
 import { FiUser, FiEdit2, FiSave, FiX } from "react-icons/fi";
 import { useSelector, shallowEqual } from "react-redux";
-import { useEditProfile } from "../hooks/user/useEditProfile";
+import { useEditProfile } from "../../hooks/user/useEditProfile";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import ChangePasswordModal from "../components/ChangePasswordModal";
-
+import ChangePasswordModal from "../../components/ChangePasswordModal";
 const UserProfileCard = () => {
   const user = useSelector((state) => state.user.currentUser, shallowEqual);
   const { updateProfile, updateStatus } = useEditProfile();
