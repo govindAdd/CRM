@@ -12,6 +12,7 @@ import {
   getPublicUserProfile,
   getCurrentUser,
   deleteUser,
+  getUserDepartment,
 } from "../controllers/user.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -20,7 +21,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 
 const router = express.Router();
 
-// ============================ Protected Routes ============================
+// ====================== PROTECTED ROUTES ======================
 router.get("/getCurrentUser", verifyJWT, getCurrentUser);
 router.post("/logout", verifyJWT, logoutUser);
 router.put(
@@ -31,7 +32,7 @@ router.put(
 );
 router.put("/change-password", verifyJWT, changeCurrentPassword);
 
-// ============================ Admin Routes ============================
+// ====================== ADMIN ROUTES ======================
 router.get("/", verifyJWT, roleBasedAccess("admin", "superadmin"), getAllUsers);
 router.put(
   "/:id/role",
@@ -39,7 +40,6 @@ router.put(
   roleBasedAccess("hr", "manager", "admin", "superadmin"),
   updateUserRole
 );
-// routes/user.routes.js or similar
 router.delete(
   "/:id",
   verifyJWT,
@@ -47,15 +47,20 @@ router.delete(
   deleteUser
 );
 
-// ============================ Public Routes ============================
+// ✅ Get departments of a specific user — PLACE BEFORE /:username
+router.get("/:userId/departments", verifyJWT, getUserDepartment);
+
+// ====================== PUBLIC ROUTES ======================
 router.post(
   "/register",
   upload.fields([{ name: "avatar", maxCount: 1 }]),
   registerUser
-); //
+);
 router.post("/login", loginUser);
 router.post("/forgot-password", requestPasswordForget);
 router.post("/reset-password/:token", resetPassword);
+
+// ✅ PUBLIC PROFILE route — PLACE THIS LAST
 router.get("/:username", getPublicUserProfile);
 
 export default router;

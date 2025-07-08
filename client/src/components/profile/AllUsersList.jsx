@@ -1,48 +1,121 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { FiEdit2, FiCheck, FiX, FiTrash2 } from "react-icons/fi";
 import { FaShieldAlt } from "react-icons/fa";
 import { useDeleteUser } from "../../hooks/user/useDeleteUser";
 import { useUpdateUserRole } from "../../hooks/user/useUpdateUserRole";
+import { useFetchAllDepartments } from "../../hooks/department/useFetchAllDepartments";
+import { useAssignMemberInDepartment } from "../../hooks/department/useAssignMemberInDepartment";
+import { useUserDepartments } from "../../hooks/user/useUserDepartments";
 
 const VALID_ROLES = ["admin", "employee", "manager", "hr", "superadmin", "user", "head"];
 
 const AllUsersList = ({ users }) => {
   const [editingUserId, setEditingUserId] = useState(null);
   const [formRole, setFormRole] = useState("");
-  const [hoveredDropdown, setHoveredDropdown] = useState(null);
+  const [formDepartment, setFormDepartment] = useState("");
+  const [userDepartmentsMap, setUserDepartmentsMap] = useState({});
   const hoverTimeout = useRef(null);
 
   const { handleDeleteUser } = useDeleteUser();
   const { handleUpdateRole } = useUpdateUserRole();
+  const { assignMember, assignStatus } = useAssignMemberInDepartment();
+  const { departments, status: deptStatus } = useFetchAllDepartments();
+  const isDeptLoading = deptStatus === "loading";
+
+  const { handleFetchDepartments } = useUserDepartments();
+
+  // 🚀 Load departments for all users
+  useEffect(() => {
+    const loadDepartments = async () => {
+      for (const user of users) {
+        if (!user?._id || userDepartmentsMap[user._id]) continue;
+        const res = await handleFetchDepartments(user._id);
+        if (res?.departments?.length > 0) {
+          setUserDepartmentsMap((prev) => ({
+            ...prev,
+            [user._id]: res.departments.map((d) => d.name),
+          }));
+        } else {
+          setUserDepartmentsMap((prev) => ({
+            ...prev,
+            [user._id]: ["Unassigned"],
+          }));
+        }
+      }
+    };
+
+    loadDepartments();
+  }, [users, handleFetchDepartments, userDepartmentsMap]);
+
+  const getDepartmentName = (dept) => {
+    if (!dept) return "Unassigned";
+    const deptId = typeof dept === "string" ? dept : dept?._id;
+    const found = departments.find((d) => d._id === deptId);
+    return found?.name || "Unassigned";
+  };
 
   const onEdit = (user) => {
     setEditingUserId(user._id);
     setFormRole(user.role);
+    const deptId =
+      typeof user.department === "string"
+        ? user.department
+        : user.department?._id || "";
+    setFormDepartment(deptId);
   };
 
   const onCancel = () => {
     setEditingUserId(null);
     setFormRole("");
-    setHoveredDropdown(null);
+    setFormDepartment("");
   };
 
   const onSave = async () => {
-    if (!editingUserId || !formRole) return;
-    await handleUpdateRole(editingUserId, formRole);
-    onCancel();
-  };
+    if (!editingUserId) return;
 
-  const onSelectRole = async (role) => {
-    if (!editingUserId || !role) return;
-    await handleUpdateRole(editingUserId, role); // ✅ Fix: use selected role directly
-    onCancel();
+    const user = users.find((u) => u._id === editingUserId);
+    const originalRole = user.role;
+    const originalDeptId =
+      typeof user.department === "string"
+        ? user.department
+        : user.department?._id || "";
+
+    const roleChanged = formRole !== originalRole;
+    const deptChanged = formDepartment !== originalDeptId;
+
+    try {
+      if (roleChanged) {
+        await handleUpdateRole(editingUserId, formRole);
+      }
+
+      if (deptChanged && formDepartment) {
+        await assignMember({
+          id: formDepartment,
+          userId: editingUserId,
+          role: formRole,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to update user role or department", error);
+    } finally {
+      onCancel();
+    }
   };
 
   return (
     <div className="grid gap-4">
       {users.map((user) => {
         const isEditing = editingUserId === user._id;
-        const isHovered = hoveredDropdown === user._id;
+        const departmentNames = userDepartmentsMap[user._id] || ["Loading..."];
+        const originalDeptId =
+          typeof user.department === "string"
+            ? user.department
+            : user.department?._id || "";
+
+        const isSaveDisabled =
+          ((!formRole || formRole === user.role) &&
+            (!formDepartment || formDepartment === originalDeptId)) ||
+          assignStatus === "loading";
 
         return (
           <div
@@ -58,11 +131,7 @@ const AllUsersList = ({ users }) => {
               <div className="relative w-11 h-11">
                 <div className="w-full h-full rounded-full overflow-hidden shadow border-2 border-purple-500/30 bg-gradient-to-br from-purple-600 to-indigo-600 text-white flex items-center justify-center uppercase font-semibold">
                   {user.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt={`${user.fullName || user.username} avatar`}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
                   ) : (
                     user.fullName?.charAt(0) || "U"
                   )}
@@ -73,7 +142,10 @@ const AllUsersList = ({ users }) => {
                   }`}
                 />
                 {["admin", "superadmin", "head"].includes(user.role) && (
-                  <span className="absolute -top-1 -right-1 bg-purple-600 text-white p-0.5 rounded-full text-[10px] shadow">
+                  <span
+                    title={user.role}
+                    className="absolute -top-1 -right-1 bg-purple-600 text-white p-0.5 rounded-full text-[10px] shadow"
+                  >
                     <FaShieldAlt className="w-3 h-3" />
                   </span>
                 )}
@@ -85,51 +157,53 @@ const AllUsersList = ({ users }) => {
                 </div>
                 <div className="text-sm text-zinc-500 dark:text-zinc-400">{user.email}</div>
 
-                {/* Role */}
-                <div
-                  className="relative mt-2 inline-block"
-                  onMouseEnter={() =>
-                    isEditing && (clearTimeout(hoverTimeout.current), setHoveredDropdown(user._id))
-                  }
-                  onMouseLeave={() => {
-                    if (isEditing) {
-                      hoverTimeout.current = setTimeout(() => setHoveredDropdown(null), 200);
-                    }
-                  }}
-                >
+                {/* Role & Department */}
+                <div className="relative mt-2 inline-block">
                   {isEditing ? (
-                    <>
-                      <span className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-                        <span>
-                          Role:{" "}
-                          <strong className="text-purple-700 dark:text-white">{formRole}</strong>
-                        </span>
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700 dark:bg-purple-800 dark:text-purple-200 animate-pulse">
-                          Editing...
-                        </span>
-                      </span>
-
-                      {isHovered && (
-                        <ul className="absolute left-full ml-3 top-0 z-20 bg-white dark:bg-zinc-800 border dark:border-zinc-600 rounded-md shadow-md py-1 min-w-[160px]">
+                    <div className="flex flex-col gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs">Role:</label>
+                        <select
+                          value={formRole}
+                          onChange={(e) => setFormRole(e.target.value)}
+                          className="bg-white dark:bg-zinc-800 border dark:border-zinc-600 rounded-md px-2 py-1 text-sm text-zinc-800 dark:text-white"
+                        >
                           {VALID_ROLES.map((role) => (
-                            <li
-                              key={role}
-                              onClick={() => onSelectRole(role)}
-                              className={`px-3 py-2 text-sm cursor-pointer transition-colors rounded-md ${
-                                formRole === role
-                                  ? "bg-purple-100 text-purple-700 dark:bg-purple-800 dark:text-white"
-                                  : "hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-white"
-                              }`}
-                            >
+                            <option key={role} value={role}>
                               {role.charAt(0).toUpperCase() + role.slice(1)}
-                            </li>
+                            </option>
                           ))}
-                        </ul>
-                      )}
-                    </>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs">Department:</label>
+                        <select
+                          value={formDepartment}
+                          onChange={(e) => setFormDepartment(e.target.value)}
+                          className="bg-white dark:bg-zinc-800 border dark:border-zinc-600 rounded-md px-2 py-1 text-sm text-zinc-800 dark:text-white"
+                          disabled={isDeptLoading}
+                        >
+                          <option value="" disabled>
+                            Select Department
+                          </option>
+                          {departments.map((dept) => (
+                            <option key={dept._id} value={dept._id}>
+                              {dept.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700 dark:bg-purple-800 dark:text-purple-200 animate-pulse w-max">
+                        Editing...
+                      </span>
+                    </div>
                   ) : (
                     <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Role: <strong>{user.role}</strong>
+                      Role: <strong>{user.role}</strong> {" · "}
+                      Department:{" "}
+                      <strong className="text-blue-600 dark:text-blue-300">
+                        {departmentNames.join(", ") || "—"}
+                      </strong>
                     </span>
                   )}
                 </div>
@@ -144,6 +218,7 @@ const AllUsersList = ({ users }) => {
                     onClick={onSave}
                     className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 transition"
                     title="Save"
+                    disabled={isSaveDisabled}
                   >
                     <FiCheck />
                   </button>

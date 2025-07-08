@@ -1,4 +1,4 @@
-// All required imports
+import { isValidObjectId } from "mongoose";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -9,7 +9,9 @@ import { sendEmail } from "../utils/sendEmail.js";
 import { generateOTP } from "../utils/generateOTP.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-
+import { Membership } from "../models/membership.model.js";
+import mongoose from "mongoose";
+const VALID_ROLES = ["superadmin", "admin", "manager","head", "employee",  "hr", "user"];
 // Helper to generate access & refresh tokens
 const generateAccessAndRefreshTokens = async (userId) => {
   const user = await User.findById(userId);
@@ -438,6 +440,75 @@ const deleteUser = asyncHandler(async (req, res) => {
     new ApiResponse(200, {}, `User '${targetUser.fullName}' deleted successfully`)
   );
 });
+
+// ===================== GET USER DEPARTMENTS =====================
+const getUserDepartment = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  if (!isValidObjectId(userId)) {
+    throw new ApiError(400, "Invalid user ID");
+  }
+
+  const user = await User.findById(userId).select("fullName email avatar isActive").lean();
+  if (!user || !user.isActive) {
+    throw new ApiError(404, "User not found or inactive");
+  }
+
+  const departments = await Membership.aggregate([
+    {
+      $match: {
+        user: new mongoose.Types.ObjectId(userId),
+        role: { $in: VALID_ROLES }
+      },
+    },
+    {
+      $lookup: {
+        from: "departments",
+        localField: "department",
+        foreignField: "_id",
+        as: "departmentDetails",
+      },
+    },
+    { $unwind: "$departmentDetails" },
+    {
+      $match: {
+        "departmentDetails.isDeleted": false,
+        "departmentDetails.status": "active",
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        departmentId: "$departmentDetails._id",
+        name: "$departmentDetails.name",
+        code: "$departmentDetails.code",
+        role: "$role",
+        description: "$departmentDetails.description",
+        status: "$departmentDetails.status",
+        joinedAt: "$createdAt",
+      },
+    },
+    { $sort: { name: 1 } },
+  ]);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        user: {
+          _id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          avatar: user.avatar,
+        },
+        totalDepartments: departments.length,
+        departments,
+      },
+      "User's department memberships fetched successfully"
+    )
+  );
+});
+
 // ============================ Module Export ============================
 export {
   registerUser,
@@ -451,5 +522,6 @@ export {
   updateUserRole,
   getPublicUserProfile,
   getCurrentUser,
-  deleteUser
+  deleteUser,
+  getUserDepartment
 };

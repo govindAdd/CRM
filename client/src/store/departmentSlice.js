@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "../services/axios";
 
-// =================== THUNKS ===================
+// =================== ASYNC THUNKS ===================
 
 // 1. Create Department
 export const createDepartment = createAsyncThunk(
@@ -78,12 +78,12 @@ export const deleteDepartment = createAsyncThunk(
   }
 );
 
-// 6. Assign Member
+// 6. Assign Member to Department
 export const assignDepartmentMember = createAsyncThunk(
   "department/assignMember",
-  async ({ id, userId }, { rejectWithValue }) => {
+  async ({ id, userId, role }, { rejectWithValue }) => {
     try {
-      const res = await axios.put(`/departments/${id}/assign`, { userId });
+      const res = await axios.put(`/departments/${id}/assign`, { userId, role });
       return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Error assigning member");
@@ -91,7 +91,7 @@ export const assignDepartmentMember = createAsyncThunk(
   }
 );
 
-// 7. Remove Member
+// 7. Remove Member from Department
 export const removeDepartmentMember = createAsyncThunk(
   "department/removeMember",
   async ({ id, userId }, { rejectWithValue }) => {
@@ -104,8 +104,8 @@ export const removeDepartmentMember = createAsyncThunk(
   }
 );
 
-// 8. Fetch All Employees in Department
-export const fetchEmployeesInDepartment  = createAsyncThunk(
+// 8. Fetch Employees in a Department
+export const fetchEmployeesInDepartment = createAsyncThunk(
   "department/fetchEmployeesInDepartment",
   async (
     { departmentId, page = 1, limit = 10, search = "", sortBy = "fullName", sortOrder = "asc" },
@@ -116,30 +116,35 @@ export const fetchEmployeesInDepartment  = createAsyncThunk(
       const res = await axios.get(`/departments/${departmentId}/employees?${params}`);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data?.message || "Error fetching employees in department"
-      );
+      return rejectWithValue(err.response?.data?.message || "Error fetching employees in department");
     }
   }
 );
 
 // =================== MAIN DEPARTMENT SLICE ===================
 
-const departmentInitialState = {
+const initialDepartmentState = {
   departments: [],
   totalCount: 0,
   selectedDepartment: null,
+
   status: "idle",
   error: null,
+
   createStatus: "idle",
   createError: null,
+
   updateStatus: "idle",
   deleteStatus: "idle",
+
+  userDepartments: [],
+  userDeptStatus: "idle",
+  userDeptError: null,
 };
 
 const departmentSlice = createSlice({
   name: "department",
-  initialState: departmentInitialState,
+  initialState: initialDepartmentState,
   reducers: {
     resetCreateStatus: (state) => {
       state.createStatus = "idle";
@@ -151,18 +156,20 @@ const departmentSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Create
       .addCase(createDepartment.pending, (state) => {
         state.createStatus = "loading";
       })
       .addCase(createDepartment.fulfilled, (state, action) => {
         state.createStatus = "succeeded";
-        state.departments = [action.payload, ...(state.departments || [])];
+        state.departments.unshift(action.payload);
       })
       .addCase(createDepartment.rejected, (state, action) => {
         state.createStatus = "failed";
         state.createError = action.payload;
       })
 
+      // Fetch All
       .addCase(fetchAllDepartments.pending, (state) => {
         state.status = "loading";
       })
@@ -176,6 +183,7 @@ const departmentSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Fetch by ID
       .addCase(fetchDepartmentById.pending, (state) => {
         state.status = "loading";
       })
@@ -188,6 +196,7 @@ const departmentSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Update
       .addCase(updateDepartment.pending, (state) => {
         state.updateStatus = "loading";
       })
@@ -201,6 +210,7 @@ const departmentSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Delete
       .addCase(deleteDepartment.pending, (state) => {
         state.deleteStatus = "loading";
       })
@@ -213,11 +223,11 @@ const departmentSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Assign/Remove Member
       .addCase(assignDepartmentMember.fulfilled, (state, action) => {
         const index = state.departments.findIndex((d) => d._id === action.payload._id);
         if (index !== -1) state.departments[index] = action.payload;
       })
-
       .addCase(removeDepartmentMember.fulfilled, (state, action) => {
         const index = state.departments.findIndex((d) => d._id === action.payload._id);
         if (index !== -1) state.departments[index] = action.payload;
@@ -225,7 +235,7 @@ const departmentSlice = createSlice({
   },
 });
 
-// =================== DEPARTMENT EMPLOYEES SLICE ===================
+// =================== EMPLOYEES SLICE ===================
 
 const departmentEmployeesSlice = createSlice({
   name: "departmentEmployees",
@@ -276,4 +286,3 @@ export const { clearEmployeesState } = departmentEmployeesSlice.actions;
 
 export const departmentReducer = departmentSlice.reducer;
 export const departmentEmployeesReducer = departmentEmployeesSlice.reducer;
-

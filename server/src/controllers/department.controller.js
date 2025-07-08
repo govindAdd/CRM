@@ -494,6 +494,7 @@ const getAllEmployeesInDepartment = asyncHandler(async (req, res) => {
   );
 });
 
+
 // ===================== EXPORT =====================
 export {
   createDepartment,
@@ -504,5 +505,5 @@ export {
   assignDepartmentMember,
   removeDepartmentMember,
   getDepartmentMembers,
-  getAllEmployeesInDepartment
+  getAllEmployeesInDepartment,
 };

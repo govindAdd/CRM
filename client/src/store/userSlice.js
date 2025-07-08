@@ -1,7 +1,10 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "../services/axios";
+import { toast } from "react-toastify";
 
-// === Thunk: Fetch current user ===
+// === Thunks ===
+
+// Fetch current user
 export const fetchCurrentUser = createAsyncThunk(
   "user/fetchCurrentUser",
   async (_, thunkAPI) => {
@@ -9,12 +12,14 @@ export const fetchCurrentUser = createAsyncThunk(
       const res = await axios.get("/users/getCurrentUser");
       return res.data.data;
     } catch (err) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || "Error");
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to fetch current user"
+      );
     }
   }
 );
 
-// === Thunk: Update user profile ===
+// Update profile
 export const updateProfile = createAsyncThunk(
   "user/updateProfile",
   async (formData, thunkAPI) => {
@@ -31,7 +36,7 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
-// === Thunk: Change Password ===
+// Change password
 export const changePassword = createAsyncThunk(
   "user/changePassword",
   async ({ oldPassword, newPassword }, thunkAPI) => {
@@ -49,7 +54,7 @@ export const changePassword = createAsyncThunk(
   }
 );
 
-// === Thunk: Fetch all users (privileged roles only) ===
+// Fetch all users
 export const fetchAllUsers = createAsyncThunk(
   "user/fetchAllUsers",
   async (_, thunkAPI) => {
@@ -64,7 +69,7 @@ export const fetchAllUsers = createAsyncThunk(
   }
 );
 
-// === Thunk: Delete user by ID (Admin, HR, etc.) ===
+// Delete user
 export const deleteUserById = createAsyncThunk(
   "user/deleteUserById",
   async (userId, thunkAPI) => {
@@ -82,7 +87,7 @@ export const deleteUserById = createAsyncThunk(
   }
 );
 
-// === Thunk: Update a user's role ===
+// Update user role
 export const updateUserRole = createAsyncThunk(
   "user/updateUserRole",
   async ({ userId, newRole }, thunkAPI) => {
@@ -96,20 +101,47 @@ export const updateUserRole = createAsyncThunk(
     }
   }
 );
+
+// Fetch departments of a user
+export const fetchUserDepartments = createAsyncThunk(
+  "user/fetchUserDepartments",
+  async (userId, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`/users/${userId}/departments`);
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch departments"
+      );
+    }
+  }
+);
+
+// === Initial State ===
+
+const initialState = {
+  currentUser: null,
+  users: [],
+  status: "idle",
+  error: null,
+
+  updateStatus: "idle",
+  updateError: null,
+
+  allUsersStatus: "idle",
+  allUsersError: null,
+
+  userDepartments: [],
+  userFromDepartments: null,
+  userDepartmentsStatus: "idle",
+  userDepartmentsError: null,
+};
+
+// === Slice ===
+
 const userSlice = createSlice({
   name: "user",
-  initialState: {
-    currentUser: null,
-    users: [],
-    status: "idle", // for currentUser
-    error: null,
-
-    updateStatus: "idle", // for updateProfile
-    updateError: null,
-
-    allUsersStatus: "idle", // for fetchAllUsers
-    allUsersError: null,
-  },
+  initialState,
   reducers: {
     clearUser: (state) => {
       state.currentUser = null;
@@ -118,8 +150,7 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-
-      // ==== fetchCurrentUser ====
+      // === Fetch Current User ===
       .addCase(fetchCurrentUser.pending, (state) => {
         state.status = "loading";
         state.error = null;
@@ -133,7 +164,7 @@ const userSlice = createSlice({
         state.error = action.payload;
       })
 
-      // ==== updateProfile ====
+      // === Update Profile ===
       .addCase(updateProfile.pending, (state) => {
         state.updateStatus = "loading";
         state.updateError = null;
@@ -141,26 +172,38 @@ const userSlice = createSlice({
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.updateStatus = "succeeded";
         state.currentUser = action.payload;
+        toast.success("Profile updated successfully", {
+          position: "top-right",
+        });
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.updateStatus = "failed";
         state.updateError = action.payload;
+        toast.error(`Update failed: ${action.payload}`, {
+          position: "top-right",
+        });
       })
 
-      // ==== changePassword ====
+      // === Change Password ===
       .addCase(changePassword.pending, (state) => {
         state.updateStatus = "loading";
         state.updateError = null;
       })
       .addCase(changePassword.fulfilled, (state) => {
         state.updateStatus = "succeeded";
+        toast.success("Password changed successfully", {
+          position: "top-right",
+        });
       })
       .addCase(changePassword.rejected, (state, action) => {
         state.updateStatus = "failed";
         state.updateError = action.payload;
+        toast.error(`Password change failed: ${action.payload}`, {
+          position: "top-right",
+        });
       })
 
-      // ==== fetchAllUsers ====
+      // === Fetch All Users ===
       .addCase(fetchAllUsers.pending, (state) => {
         state.allUsersStatus = "loading";
         state.allUsersError = null;
@@ -174,7 +217,7 @@ const userSlice = createSlice({
         state.allUsersError = action.payload;
       })
 
-      // ==== deleteUserById ====
+      // === Delete User ===
       .addCase(deleteUserById.fulfilled, (state, action) => {
         state.users = state.users.filter(
           (user) => user._id !== action.payload.userId
@@ -186,7 +229,8 @@ const userSlice = createSlice({
           position: "top-right",
         });
       })
-      // ==== updateUserRole ====
+
+      // === Update User Role ===
       .addCase(updateUserRole.fulfilled, (state, action) => {
         const updated = action.payload;
         state.users = state.users.map((u) =>
@@ -195,6 +239,24 @@ const userSlice = createSlice({
       })
       .addCase(updateUserRole.rejected, (state, action) => {
         toast.error(`Failed to update role: ${action.payload}`, {
+          position: "top-right",
+        });
+      })
+
+      // === Fetch User Departments ===
+      .addCase(fetchUserDepartments.pending, (state) => {
+        state.userDepartmentsStatus = "loading";
+        state.userDepartmentsError = null;
+      })
+      .addCase(fetchUserDepartments.fulfilled, (state, action) => {
+        state.userDepartmentsStatus = "succeeded";
+        state.userDepartments = action.payload.departments || []; // ✅ Fix here
+        state.userFromDepartments = action.payload.user || null; // ✅ Include user if needed
+      })
+      .addCase(fetchUserDepartments.rejected, (state, action) => {
+        state.userDepartmentsStatus = "failed";
+        state.userDepartmentsError = action.payload;
+        toast.error(`Failed to load departments: ${action.payload}`, {
           position: "top-right",
         });
       });

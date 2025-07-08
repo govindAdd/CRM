@@ -62,4 +62,5 @@ router.get(
   roleBasedAccess("admin", "superadmin", "hr", "manager"),
   getAllEmployeesInDepartment
 );
+
 export default router;

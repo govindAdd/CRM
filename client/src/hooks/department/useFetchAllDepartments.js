@@ -3,20 +3,16 @@ import { useEffect } from "react";
 import { fetchAllDepartments } from "../../store/departmentSlice";
 import { toast } from "react-toastify";
 
-export const useFetchAllDepartments = ({
-  page = 1,
-  limit = 5,
-  search = "",
-  sortBy = "name",
-  sortOrder = "asc",
-}) => {
+export const useFetchAllDepartments = () => {
   const dispatch = useDispatch();
   const { departments, totalCount, status, error } = useSelector((state) => state.department);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const resultAction = await dispatch(fetchAllDepartments({ page, limit, search, sortBy, sortOrder }));
+        const resultAction = await dispatch(
+          fetchAllDepartments({ page: 1, limit: 1000, search: "", sortBy: "name", sortOrder: "asc" })
+        );
         const result = resultAction.payload;
 
         if (result && Array.isArray(result)) {
@@ -29,7 +25,7 @@ export const useFetchAllDepartments = ({
     };
 
     fetchData();
-  }, [page, limit, search, sortBy, sortOrder, dispatch]);
+  }, [dispatch]);
 
   return {
     departments: Array.isArray(departments) ? departments : [],
