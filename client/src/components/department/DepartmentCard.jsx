@@ -165,6 +165,7 @@ const DepartmentCard = ({ department, onEdit }) => {
         employees={employees}
         status={empStatus}
         error={empError}
+        departmentId={department._id}
       />
     </>
   );

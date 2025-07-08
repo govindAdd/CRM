@@ -1,13 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { Dialog } from "@headlessui/react";
-import { FiX, FiSearch, FiUserPlus } from "react-icons/fi";
+import { FiX, FiSearch, FiUserPlus, FiTrash2 } from "react-icons/fi";
 import Skeleton from "react-loading-skeleton";
+import useRemoveMemberFromDepartment from "../../hooks/department/useRemoveMemberFromDepartment";
 
-const MembersModal = ({ isOpen, onClose, title, employees, status, error }) => {
+const MembersModal = ({
+  isOpen,
+  onClose,
+  title,
+  employees,
+  status,
+  error,
+  departmentId,
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
-
+  const { handleRemoveMember, removeStatus } = useRemoveMemberFromDepartment();
   // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -21,9 +30,10 @@ const MembersModal = ({ isOpen, onClose, title, employees, status, error }) => {
   }, [isOpen]);
 
   // 🔍 Filtered employees based on search term
-  const filteredEmployees = employees?.filter((emp) =>
-    emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEmployees = employees?.filter(
+    (emp) =>
+      emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Pagination logic
@@ -41,7 +51,10 @@ const MembersModal = ({ isOpen, onClose, title, employees, status, error }) => {
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
+      <div
+        className="fixed inset-0 bg-black/30 backdrop-blur-sm"
+        aria-hidden="true"
+      />
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-6 overflow-y-auto max-h-[80vh]">
           {/* Header */}
@@ -91,15 +104,21 @@ const MembersModal = ({ isOpen, onClose, title, employees, status, error }) => {
           )}
 
           {status === "failed" && (
-            <p className="text-red-600 text-sm">{error || "Failed to load employees."}</p>
+            <p className="text-red-600 text-sm">
+              {error || "Failed to load employees."}
+            </p>
           )}
 
           {status === "succeeded" && employees?.length === 0 && (
-            <p className="text-gray-500 text-sm">No members found in this department.</p>
+            <p className="text-gray-500 text-sm">
+              No members found in this department.
+            </p>
           )}
 
           {status === "succeeded" && filteredEmployees?.length === 0 && (
-            <p className="text-gray-500 text-sm">No employees match your search.</p>
+            <p className="text-gray-500 text-sm">
+              No employees match your search.
+            </p>
           )}
 
           {status === "succeeded" && filteredEmployees?.length > 0 && (
@@ -116,11 +135,29 @@ const MembersModal = ({ isOpen, onClose, title, employees, status, error }) => {
                       className="w-10 h-10 rounded-full object-cover border shadow"
                     />
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-800">{emp.fullName}</p>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {emp.fullName}
+                      </p>
                       <p className="text-xs text-gray-500">{emp.email}</p>
                     </div>
-                    <div className="text-xs text-purple-700 font-medium uppercase">
-                      {emp.role}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-purple-700 font-medium uppercase">
+                        {emp.role}
+                      </span>
+                      <button
+                        onClick={() =>
+                          handleRemoveMember({
+                            id: departmentId,
+                            userId: emp.userId,
+                          })
+                        }
+                        className="p-2 rounded-full hover:bg-red-100 text-red-600 transition"
+                        title="Remove Member"
+                        disabled={removeStatus === "loading"}
+                      >
+                        <FiTrash2 className="text-lg" />
+                      </button>
+                      
                     </div>
                   </div>
                 ))}
@@ -131,7 +168,9 @@ const MembersModal = ({ isOpen, onClose, title, employees, status, error }) => {
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className={`px-3 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 transition flex items-center gap-1 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`px-3 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 transition flex items-center gap-1 ${
+                      currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
                     <span className="text-lg">&#8592;</span> Prev
                   </button>
@@ -140,15 +179,25 @@ const MembersModal = ({ isOpen, onClose, title, employees, status, error }) => {
                     <button
                       key={idx + 1}
                       onClick={() => setCurrentPage(idx + 1)}
-                      className={`px-3 py-1 rounded-lg border ${currentPage === idx + 1 ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'} transition`}
+                      className={`px-3 py-1 rounded-lg border ${
+                        currentPage === idx + 1
+                          ? "bg-purple-600 text-white border-purple-600"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-100"
+                      } transition`}
                     >
                       {idx + 1}
                     </button>
                   ))}
                   <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={currentPage === totalPages}
-                    className={`px-3 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 transition flex items-center gap-1 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`px-3 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 transition flex items-center gap-1 ${
+                      currentPage === totalPages
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
                   >
                     Next <span className="text-lg">&#8594;</span>
                   </button>
