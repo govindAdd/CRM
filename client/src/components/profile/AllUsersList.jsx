@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import PropTypes from "prop-types";
 import { FiEdit2, FiCheck, FiX, FiTrash2 } from "react-icons/fi";
 import { FaShieldAlt } from "react-icons/fa";
 import { useDeleteUser } from "../../hooks/user/useDeleteUser";
@@ -14,7 +15,7 @@ const AllUsersList = ({ users }) => {
   const [formRole, setFormRole] = useState("");
   const [formDepartment, setFormDepartment] = useState("");
   const [userDepartmentsMap, setUserDepartmentsMap] = useState({});
-  const hoverTimeout = useRef(null);
+  const fetchedUserIds = useRef(new Set());
 
   const { handleDeleteUser } = useDeleteUser();
   const { handleUpdateRole } = useUpdateUserRole();
@@ -24,37 +25,36 @@ const AllUsersList = ({ users }) => {
 
   const { handleFetchDepartments } = useUserDepartments();
 
-  // 🚀 Load departments for all users
+  // 🚀 Load departments for all users (optimized)
   useEffect(() => {
     const loadDepartments = async () => {
       for (const user of users) {
-        if (!user?._id || userDepartmentsMap[user._id]) continue;
+        if (!user?._id || fetchedUserIds.current.has(user._id)) continue;
+        fetchedUserIds.current.add(user._id);
         const res = await handleFetchDepartments(user._id);
-        if (res?.departments?.length > 0) {
-          setUserDepartmentsMap((prev) => ({
-            ...prev,
-            [user._id]: res.departments.map((d) => d.name),
-          }));
-        } else {
-          setUserDepartmentsMap((prev) => ({
-            ...prev,
-            [user._id]: ["Unassigned"],
-          }));
-        }
+        setUserDepartmentsMap((prev) => ({
+          ...prev,
+          [user._id]: res?.departments?.length > 0
+            ? res.departments.map((d) => d.name)
+            : ["Unassigned"],
+        }));
       }
     };
-
     loadDepartments();
-  }, [users, handleFetchDepartments, userDepartmentsMap]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users, handleFetchDepartments]);
 
-  const getDepartmentName = (dept) => {
-    if (!dept) return "Unassigned";
-    const deptId = typeof dept === "string" ? dept : dept?._id;
-    const found = departments.find((d) => d._id === deptId);
-    return found?.name || "Unassigned";
-  };
+  const getDepartmentName = useCallback(
+    (dept) => {
+      if (!dept) return "Unassigned";
+      const deptId = typeof dept === "string" ? dept : dept?._id;
+      const found = departments.find((d) => d._id === deptId);
+      return found?.name || "Unassigned";
+    },
+    [departments]
+  );
 
-  const onEdit = (user) => {
+  const onEdit = useCallback((user) => {
     setEditingUserId(user._id);
     setFormRole(user.role);
     const deptId =
@@ -62,32 +62,29 @@ const AllUsersList = ({ users }) => {
         ? user.department
         : user.department?._id || "";
     setFormDepartment(deptId);
-  };
+  }, []);
 
-  const onCancel = () => {
+  const onCancel = useCallback(() => {
     setEditingUserId(null);
     setFormRole("");
     setFormDepartment("");
-  };
+  }, []);
 
-  const onSave = async () => {
+  const onSave = useCallback(async () => {
     if (!editingUserId) return;
-
     const user = users.find((u) => u._id === editingUserId);
+    if (!user) return;
     const originalRole = user.role;
     const originalDeptId =
       typeof user.department === "string"
         ? user.department
         : user.department?._id || "";
-
     const roleChanged = formRole !== originalRole;
     const deptChanged = formDepartment !== originalDeptId;
-
     try {
       if (roleChanged) {
         await handleUpdateRole(editingUserId, formRole);
       }
-
       if (deptChanged && formDepartment) {
         await assignMember({
           id: formDepartment,
@@ -100,23 +97,30 @@ const AllUsersList = ({ users }) => {
     } finally {
       onCancel();
     }
-  };
+  }, [editingUserId, users, formRole, formDepartment, handleUpdateRole, assignMember, onCancel]);
+
+  // Memoize department names for each user
+  const departmentNamesMap = useMemo(() => {
+    const map = {};
+    users.forEach((user) => {
+      map[user._id] = userDepartmentsMap[user._id] || ["Loading..."];
+    });
+    return map;
+  }, [users, userDepartmentsMap]);
 
   return (
     <div className="grid gap-4">
       {users.map((user) => {
         const isEditing = editingUserId === user._id;
-        const departmentNames = userDepartmentsMap[user._id] || ["Loading..."];
+        const departmentNames = departmentNamesMap[user._id];
         const originalDeptId =
           typeof user.department === "string"
             ? user.department
             : user.department?._id || "";
-
         const isSaveDisabled =
           ((!formRole || formRole === user.role) &&
             (!formDepartment || formDepartment === originalDeptId)) ||
           assignStatus === "loading";
-
         return (
           <div
             key={user._id}
@@ -140,6 +144,7 @@ const AllUsersList = ({ users }) => {
                   className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full ring-2 ring-white dark:ring-zinc-900 ${
                     user.status === "online" ? "bg-green-500" : "bg-zinc-400 dark:bg-zinc-600"
                   }`}
+                  aria-label={user.status === "online" ? "Online" : "Offline"}
                 />
                 {["admin", "superadmin", "head"].includes(user.role) && (
                   <span
@@ -150,20 +155,19 @@ const AllUsersList = ({ users }) => {
                   </span>
                 )}
               </div>
-
               <div>
                 <div className="text-lg font-semibold text-zinc-900 dark:text-white">
                   {user.username || user.fullName}
                 </div>
                 <div className="text-sm text-zinc-500 dark:text-zinc-400">{user.email}</div>
-
                 {/* Role & Department */}
                 <div className="relative mt-2 inline-block">
                   {isEditing ? (
                     <div className="flex flex-col gap-2 text-sm text-zinc-600 dark:text-zinc-300">
                       <div className="flex items-center gap-2">
-                        <label className="text-xs">Role:</label>
+                        <label className="text-xs" htmlFor={`role-select-${user._id}`}>Role:</label>
                         <select
+                          id={`role-select-${user._id}`}
                           value={formRole}
                           onChange={(e) => setFormRole(e.target.value)}
                           className="bg-white dark:bg-zinc-800 border dark:border-zinc-600 rounded-md px-2 py-1 text-sm text-zinc-800 dark:text-white"
@@ -176,8 +180,9 @@ const AllUsersList = ({ users }) => {
                         </select>
                       </div>
                       <div className="flex items-center gap-2">
-                        <label className="text-xs">Department:</label>
+                        <label className="text-xs" htmlFor={`dept-select-${user._id}`}>Department:</label>
                         <select
+                          id={`dept-select-${user._id}`}
                           value={formDepartment}
                           onChange={(e) => setFormDepartment(e.target.value)}
                           className="bg-white dark:bg-zinc-800 border dark:border-zinc-600 rounded-md px-2 py-1 text-sm text-zinc-800 dark:text-white"
@@ -200,7 +205,7 @@ const AllUsersList = ({ users }) => {
                   ) : (
                     <span className="text-sm text-zinc-600 dark:text-zinc-400">
                       Role: <strong>{user.role}</strong> {" · "}
-                      Department:{" "}
+                      Department: {" "}
                       <strong className="text-blue-600 dark:text-blue-300">
                         {departmentNames.join(", ") || "—"}
                       </strong>
@@ -209,7 +214,6 @@ const AllUsersList = ({ users }) => {
                 </div>
               </div>
             </div>
-
             {/* Actions */}
             <div className="flex items-center gap-2">
               {isEditing ? (
@@ -218,6 +222,7 @@ const AllUsersList = ({ users }) => {
                     onClick={onSave}
                     className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 transition"
                     title="Save"
+                    aria-label="Save changes"
                     disabled={isSaveDisabled}
                   >
                     <FiCheck />
@@ -226,6 +231,7 @@ const AllUsersList = ({ users }) => {
                     onClick={onCancel}
                     className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 transition"
                     title="Cancel"
+                    aria-label="Cancel editing"
                   >
                     <FiX />
                   </button>
@@ -236,6 +242,7 @@ const AllUsersList = ({ users }) => {
                     onClick={() => onEdit(user)}
                     className="p-2 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition"
                     title="Edit Role"
+                    aria-label={`Edit role for ${user.username || user.fullName}`}
                   >
                     <FiEdit2 />
                   </button>
@@ -250,6 +257,7 @@ const AllUsersList = ({ users }) => {
                     }}
                     className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-600 dark:bg-red-900 dark:text-red-300 transition"
                     title="Delete User"
+                    aria-label={`Delete user ${user.username || user.fullName}`}
                   >
                     <FiTrash2 />
                   </button>
@@ -261,6 +269,24 @@ const AllUsersList = ({ users }) => {
       })}
     </div>
   );
+};
+
+AllUsersList.propTypes = {
+  users: PropTypes.arrayOf(
+    PropTypes.shape({
+      _id: PropTypes.string.isRequired,
+      username: PropTypes.string,
+      fullName: PropTypes.string,
+      email: PropTypes.string,
+      avatar: PropTypes.string,
+      role: PropTypes.string.isRequired,
+      department: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.shape({ _id: PropTypes.string, name: PropTypes.string }),
+      ]),
+      status: PropTypes.string,
+    })
+  ).isRequired,
 };
 
 export default AllUsersList;

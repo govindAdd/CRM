@@ -280,6 +280,9 @@ const assignDepartmentMember = [
     if (!user || !user.isActive)
       throw new ApiError(404, "User not found or inactive");
 
+    // Remove user from all other departments
+    await Membership.deleteMany({ user: userId, department: { $ne: departmentId } });
+
     const membership = await Membership.findOneAndUpdate(
       { user: userId, department: departmentId },
       { role },

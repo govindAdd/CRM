@@ -3,7 +3,10 @@ import React, {
   useEffect,
   useMemo,
   useTransition,
+  useCallback,
+  useRef,
 } from "react";
+import PropTypes from "prop-types";
 import { useSelector, shallowEqual } from "react-redux";
 import {
   FaPhoneAlt,
@@ -29,7 +32,7 @@ const UserProfileCard = () => {
   const { updateProfile, updateStatus } = useEditProfile();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [startTransition] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [localUser, setLocalUser] = useState(() => user || {});
@@ -38,11 +41,21 @@ const UserProfileCard = () => {
 
   const [newAvatar, setNewAvatar] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarError, setAvatarError] = useState("");
+  const fileInputRef = useRef(null);
 
+  // Memoize avatar preview
   const avatarPreview = useMemo(
     () => newAvatar || user?.avatar,
     [newAvatar, user?.avatar]
   );
+
+  // Clean up object URL to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (newAvatar) URL.revokeObjectURL(newAvatar);
+    };
+  }, [newAvatar]);
 
   // Load departments once on mount
   useEffect(() => {
@@ -52,6 +65,8 @@ const UserProfileCard = () => {
       const res = await handleFetchDepartments(userId);
       if (res?.departments?.length > 0) {
         setDepartmentNames(res.departments.map((d) => d.name));
+      } else {
+        setDepartmentNames([]);
       }
       setDeptLoading(false);
     };
@@ -59,30 +74,51 @@ const UserProfileCard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  const handleInputChange = (field, value) =>
+  // Memoized input change handler
+  const handleInputChange = useCallback((field, value) => {
     setLocalUser((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
-  const handleAvatarChange = (e) => {
+  // Avatar change handler with validation
+  const handleAvatarChange = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
+      if (!file.type.startsWith("image/")) {
+        setAvatarError("Please select a valid image file.");
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        setAvatarError("Image size should be less than 2MB.");
+        return;
+      }
+      setAvatarError("");
+      if (newAvatar) URL.revokeObjectURL(newAvatar);
       setNewAvatar(URL.createObjectURL(file));
       setAvatarFile(file);
     }
-  };
+  }, [newAvatar]);
 
-  const handleCancel = () => {
+  // Cancel editing
+  const handleCancel = useCallback(() => {
     setLocalUser(user);
+    if (newAvatar) URL.revokeObjectURL(newAvatar);
     setNewAvatar(null);
     setAvatarFile(null);
+    setAvatarError("");
     setIsEditing(false);
-  };
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [user, newAvatar]);
 
-  const handleSave = async () => {
+  // Save profile changes
+  const handleSave = useCallback(async () => {
     setIsEditing(false);
     await updateProfile(localUser, avatarFile);
     setAvatarFile(null);
-  };
+    setAvatarError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [localUser, avatarFile, updateProfile]);
 
+  // Show skeleton while loading
   if (!user || deptLoading) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -104,6 +140,8 @@ const UserProfileCard = () => {
           fullName={user.fullName}
           isEditing={isEditing}
           onAvatarChange={handleAvatarChange}
+          fileInputRef={fileInputRef}
+          avatarError={avatarError}
         />
         <HeaderInfo
           localUser={localUser}
@@ -133,6 +171,7 @@ const UserProfileCard = () => {
         <button
           onClick={() => setIsModalOpen(true)}
           className="text-sm text-purple-700 dark:text-purple-400 hover:underline"
+          aria-label="Change Password"
         >
           Change Password
         </button>
@@ -147,8 +186,8 @@ const UserProfileCard = () => {
 };
 
 // ➕ AvatarSection
-const AvatarSection = ({ avatar, fullName, isEditing, onAvatarChange }) => (
-  <div className="relative group">
+const AvatarSection = ({ avatar, fullName, isEditing, onAvatarChange, fileInputRef, avatarError }) => (
+  <div className="relative group" aria-label="User Avatar">
     <img
       src={avatar}
       alt={fullName}
@@ -156,15 +195,35 @@ const AvatarSection = ({ avatar, fullName, isEditing, onAvatarChange }) => (
       loading="lazy"
     />
     {isEditing && (
-      <label className="absolute inset-0 bg-black/40 flex items-center justify-center text-white rounded-full cursor-pointer">
-        <input type="file" accept="image/*" onChange={onAvatarChange} className="hidden" />
+      <label className="absolute inset-0 bg-black/40 flex items-center justify-center text-white rounded-full cursor-pointer" tabIndex={0} aria-label="Change avatar">
+        <input
+          type="file"
+          accept="image/*"
+          onChange={onAvatarChange}
+          className="hidden"
+          ref={fileInputRef}
+          aria-label="Upload avatar"
+        />
         <FiUser size={20} />
       </label>
+    )}
+    {avatarError && (
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs px-2 py-1 rounded shadow z-10">
+        {avatarError}
+      </div>
     )}
   </div>
 );
 
-// ➕ HeaderInfo
+AvatarSection.propTypes = {
+  avatar: PropTypes.string,
+  fullName: PropTypes.string,
+  isEditing: PropTypes.bool,
+  onAvatarChange: PropTypes.func,
+  fileInputRef: PropTypes.object,
+  avatarError: PropTypes.string,
+};
+
 const HeaderInfo = ({ localUser, user, isEditing, onInputChange }) => (
   <div className="flex-1 space-y-1 text-center md:text-left">
     <h2 className="text-3xl font-bold text-zinc-800 dark:text-white">
@@ -174,6 +233,7 @@ const HeaderInfo = ({ localUser, user, isEditing, onInputChange }) => (
           className="bg-transparent border-b border-gray-300 dark:border-zinc-600 w-full focus:outline-none text-2xl"
           value={localUser.fullName}
           onChange={(e) => onInputChange("fullName", e.target.value)}
+          aria-label="Full Name"
         />
       ) : (
         localUser.fullName
@@ -186,7 +246,13 @@ const HeaderInfo = ({ localUser, user, isEditing, onInputChange }) => (
   </div>
 );
 
-// ➕ EditActions
+HeaderInfo.propTypes = {
+  localUser: PropTypes.object.isRequired,
+  user: PropTypes.object.isRequired,
+  isEditing: PropTypes.bool,
+  onInputChange: PropTypes.func,
+};
+
 const EditActions = ({ isEditing, onSave, onCancel, onEdit, loading }) => (
   <div className="mt-4 md:mt-0">
     {isEditing ? (
@@ -195,6 +261,7 @@ const EditActions = ({ isEditing, onSave, onCancel, onEdit, loading }) => (
           onClick={onSave}
           disabled={loading}
           className="flex items-center gap-1 px-4 py-2 text-sm bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 transition"
+          aria-label="Save profile changes"
         >
           <FiSave />
           {loading ? "Saving..." : "Save"}
@@ -202,6 +269,7 @@ const EditActions = ({ isEditing, onSave, onCancel, onEdit, loading }) => (
         <button
           onClick={onCancel}
           className="flex items-center gap-1 px-4 py-2 text-sm bg-gray-200 dark:bg-zinc-800 rounded-xl hover:bg-gray-300 dark:hover:bg-zinc-700 transition"
+          aria-label="Cancel editing"
         >
           <FiX /> Cancel
         </button>
@@ -210,6 +278,7 @@ const EditActions = ({ isEditing, onSave, onCancel, onEdit, loading }) => (
       <button
         onClick={onEdit}
         className="flex items-center gap-1 px-4 py-2 text-sm bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-white rounded-xl hover:bg-purple-200 dark:hover:bg-purple-800 transition"
+        aria-label="Edit profile"
       >
         <FiEdit2 /> Edit Profile
       </button>
@@ -217,7 +286,14 @@ const EditActions = ({ isEditing, onSave, onCancel, onEdit, loading }) => (
   </div>
 );
 
-// ➕ ProfileInfo
+EditActions.propTypes = {
+  isEditing: PropTypes.bool,
+  onSave: PropTypes.func,
+  onCancel: PropTypes.func,
+  onEdit: PropTypes.func,
+  loading: PropTypes.bool,
+};
+
 const ProfileInfo = ({
   icon,
   label,
@@ -238,6 +314,7 @@ const ProfileInfo = ({
           className="text-sm font-medium bg-transparent border-b border-gray-300 dark:border-zinc-600 focus:outline-none dark:text-white"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          aria-label={label}
         />
       ) : (
         <span className="text-sm font-medium text-zinc-800 dark:text-white truncate">
@@ -247,5 +324,14 @@ const ProfileInfo = ({
     </div>
   </div>
 );
+
+ProfileInfo.propTypes = {
+  icon: PropTypes.node.isRequired,
+  label: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  isEditing: PropTypes.bool,
+  onChange: PropTypes.func,
+  type: PropTypes.string,
+};
 
 export default UserProfileCard;
