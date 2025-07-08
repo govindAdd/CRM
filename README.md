@@ -201,6 +201,27 @@ This project is licensed under the [ISC License](LICENSE).
 
 Developed by Govind Ghosh and contributors.
 
+<p align="left">
+  <a href="mailto:govindghosh0@gmail.com" target="_blank" title="Gmail">
+    <img src="https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Gmail" />
+  </a>
+  <a href="https://github.com/govindghosh/" target="_blank" title="GitHub">
+    <img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
+  </a>
+  <a href="https://in.linkedin.com/in/govind-web-developer" target="_blank" title="LinkedIn">
+    <img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
+  </a>
+  <a href="https://x.com/govind_ghosh" target="_blank" title="X (Twitter)">
+    <img src="https://img.shields.io/badge/X-000000?style=for-the-badge&logo=x&logoColor=white" alt="X" />
+  </a>
+  <a href="https://www.instagram.com/govindghosh0/" target="_blank" title="Instagram">
+    <img src="https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram" />
+  </a>
+  <a href="https://portfolio-gold-sigma.vercel.app/" target="_blank" title="Portfolio">
+    <img src="https://img.shields.io/badge/Portfolio-FFD700?style=for-the-badge&logo=vercel&logoColor=black" alt="Portfolio" />
+  </a>
+</p>
+
 ---
 
-> **Tip:** For detailed module and API documentation, see the code in `server/src/models/`, `server/src/controllers/`, and `server/src/routes/`.
+> **This CRM is built to industry standards and is ready for production deployment.**
