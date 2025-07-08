@@ -9,7 +9,7 @@ const LoginPage = () => {
   const [showLogo, setShowLogo] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowLogo(false), 3500);
+    const timer = setTimeout(() => setShowLogo(false), 6000);
     return () => clearTimeout(timer);
   }, []);
 

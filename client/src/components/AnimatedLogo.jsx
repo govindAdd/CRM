@@ -13,7 +13,7 @@ const AnimatedLogo = ({ onComplete }) => {
 
     video.muted = true; // Allow autoplay
     video.playsInline = true; // For iOS
-    video.currentTime = 3; // Start from timestamp
+    // video.currentTime = 3; // Start from timestamp (REMOVED)
 
     const handleAutoplay = async () => {
       try {
@@ -23,22 +23,17 @@ const AnimatedLogo = ({ onComplete }) => {
       }
     };
 
-    const handleTimeUpdate = () => {
-      if (video.currentTime >= 6) {
-        video.pause();
-        setAnimationState("exit");
-
-        // Call optional callback when finished
-        if (onComplete) onComplete();
-      }
+    const handleEnded = () => {
+      setAnimationState("exit");
+      if (onComplete) onComplete();
     };
 
     video.addEventListener("loadedmetadata", handleAutoplay);
-    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("ended", handleEnded);
 
     return () => {
       video.removeEventListener("loadedmetadata", handleAutoplay);
-      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("ended", handleEnded);
     };
   }, [onComplete]);
 

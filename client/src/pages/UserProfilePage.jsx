@@ -48,7 +48,7 @@ const UserProfilePage = () => {
 
   const filteredUsers = useMemo(() => {
     return allUsers.filter((user) => {
-      const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+      const fullName = user.fullName?.toLowerCase() || "";
       return (
         fullName.includes(debouncedQuery.toLowerCase()) ||
         user.email.toLowerCase().includes(debouncedQuery.toLowerCase())
@@ -116,7 +116,7 @@ const UserProfilePage = () => {
 
         {status === "loading" && renderSkeleton()}
         {status === "failed" && renderError()}
-        {status === "succeeded" && <UserProfileCard user={currentUser} />}
+        {status === "succeeded" && currentUser && <UserProfileCard user={currentUser} />}
       </div>
 
       {isPrivileged && (

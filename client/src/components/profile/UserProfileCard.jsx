@@ -2,7 +2,6 @@ import React, {
   useState,
   useEffect,
   useMemo,
-  useTransition,
   useCallback,
   useRef,
 } from "react";
@@ -32,7 +31,6 @@ const UserProfileCard = () => {
   const { updateProfile, updateStatus } = useEditProfile();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [startTransition] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [localUser, setLocalUser] = useState(() => user || {});
@@ -153,7 +151,7 @@ const UserProfileCard = () => {
           isEditing={isEditing}
           onSave={handleSave}
           onCancel={handleCancel}
-          onEdit={() => startTransition(() => setIsEditing(true))}
+          onEdit={() => setIsEditing(true)}
           loading={updateStatus === "loading"}
         />
       </div>
