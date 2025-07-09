@@ -44,7 +44,7 @@ const publicProfileSlice = createSlice({
       .addCase(fetchPublicProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
+      })
   },
 });
 

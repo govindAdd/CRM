@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from '../services/axios';
+import { resetAppState } from './actions';
 
 // ========== ASYNC THUNKS ==========
 
@@ -184,7 +185,14 @@ const authSlice = createSlice({
       .addCase(resetPasswordUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
+      })
+      // Reset App State
+      .addCase(resetAppState, () => ({
+        user: null,
+        loading: false,
+        error: null,
+        isAuthenticated: false,
+      }));
   },
 });
 

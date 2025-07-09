@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAllUsers } from "../../store/userSlice";
 import { toast } from "react-toastify";
@@ -11,11 +11,15 @@ export const useAllUsers = ({ autoFetch = true } = {}) => {
     allUsersError,
   } = useSelector((state) => state.user);
 
+  const fetchUsers = useCallback(() => {
+    dispatch(fetchAllUsers());
+  }, [dispatch]);
+
   useEffect(() => {
     if (autoFetch && allUsersStatus === "idle") {
-      dispatch(fetchAllUsers());
+      fetchUsers();
     }
-  }, [dispatch, autoFetch, allUsersStatus]);
+  }, [autoFetch, allUsersStatus, fetchUsers]);
 
   useEffect(() => {
     if (allUsersStatus === "failed" && allUsersError) {
@@ -29,5 +33,6 @@ export const useAllUsers = ({ autoFetch = true } = {}) => {
     allUsers,
     allUsersStatus,
     allUsersError,
+    fetchUsers, // Return function for manual fetch
   };
 };

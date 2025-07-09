@@ -232,7 +232,7 @@ const departmentSlice = createSlice({
       .addCase(removeDepartmentMember.fulfilled, (state, action) => {
         const index = state.departments.findIndex((d) => d._id === action.payload._id);
         if (index !== -1) state.departments[index] = action.payload;
-      });
+      })
   },
 });
 
@@ -276,7 +276,7 @@ const departmentEmployeesSlice = createSlice({
       .addCase(fetchEmployeesInDepartment.rejected, (state, action) => {
         state.empStatus = "failed";
         state.empError = action.payload;
-      });
+      })
   },
 });
 

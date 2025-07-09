@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "../services/axios";
 import { toast } from "react-toastify";
+import { resetAppState } from './actions';
 
 // === Thunks ===
 
@@ -259,7 +260,9 @@ const userSlice = createSlice({
         toast.error(`Failed to load departments: ${action.payload}`, {
           position: "top-right",
         });
-      });
+      })
+      // Reset App State on logout
+      .addCase(resetAppState, () => initialState);
   },
 });
 
