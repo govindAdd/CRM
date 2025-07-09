@@ -11,6 +11,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { Membership } from "../models/membership.model.js";
 import mongoose from "mongoose";
+
 const VALID_ROLES = ["superadmin", "admin", "manager","head", "employee",  "hr", "user"];
 // Helper to generate access & refresh tokens
 const generateAccessAndRefreshTokens = async (userId) => {

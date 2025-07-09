@@ -2,6 +2,7 @@ import React from "react";
 import AttendanceSheet from "../components/attendance/AttendanceSheet";
 import Layout from "../layouts/Layout";
 import { PiClockCountdownLight } from "react-icons/pi";
+import AttendanceForm from "../components/attendance/AttendanceForm";
 
 const AttendancePage = () => {
   return (
@@ -19,7 +20,8 @@ const AttendancePage = () => {
 
         {/* Alien Attendance Sheet */}
         <div className="rounded-2xl bg-white border border-cyan-500/20 p-4 md:p-6 shadow-lg">
-          <AttendanceSheet />
+          {/* <AttendanceSheet /> */}
+          <AttendanceForm />
         </div>
       </div>
     </Layout>
