@@ -13,6 +13,10 @@ const isValidLatLng = (val) => typeof val === "number" && !isNaN(val);
 const isLatInRange = (lat) => lat >= -90 && lat <= 90;
 const isLngInRange = (lng) => lng >= -180 && lng <= 180;
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
+
 const createAttendance = asyncHandler(async (req, res) => {
   let {
     employee,
@@ -270,4 +274,104 @@ const updateAttendance = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, populated, "Attendance updated successfully"));
 });
 
-export { createAttendance, updateAttendance };
+const getAllAttendance = asyncHandler(async (req, res) => {
+  // ===================== 1️⃣ Extract Query Parameters =====================
+  let {
+    page = DEFAULT_PAGE,
+    limit = DEFAULT_LIMIT,
+    search = "",
+    sortBy = "date",
+    sortOrder = "desc",
+    status,
+    department,
+    employee,
+    startDate,
+    endDate,
+  } = req.query;
+
+  // ===================== 2️⃣ Normalize & Validate Inputs =====================
+  page = Math.max(1, parseInt(page));
+  limit = Math.min(parseInt(limit), MAX_LIMIT);
+
+  search = search.trim().toLowerCase();
+
+  if (status && !ALLOWED_STATUS.includes(status)) {
+    throw new ApiError(400, `Invalid status. Allowed: ${ALLOWED_STATUS.join(", ")}`);
+  }
+
+  if (employee && !isValidObjectId(employee)) {
+    throw new ApiError(400, "Invalid employee ID");
+  }
+
+  if (department && !isValidObjectId(department)) {
+    throw new ApiError(400, "Invalid department ID");
+  }
+
+  const dateFilter = {};
+  if (startDate) {
+    const from = new Date(startDate);
+    if (isNaN(from.getTime())) throw new ApiError(400, "Invalid startDate");
+    from.setHours(0, 0, 0, 0);
+    dateFilter.$gte = from;
+  }
+  if (endDate) {
+    const to = new Date(endDate);
+    if (isNaN(to.getTime())) throw new ApiError(400, "Invalid endDate");
+    to.setHours(23, 59, 59, 999);
+    dateFilter.$lte = to;
+  }
+
+  // ===================== 3️⃣ Build MongoDB Query =====================
+  const filter = { isDeleted: false };
+  if (status) filter.status = status;
+  if (employee) filter.employee = employee;
+  if (department) filter.department = department;
+  if (Object.keys(dateFilter).length > 0) filter.date = dateFilter;
+
+  if (search) {
+    const regex = new RegExp(search, "i");
+    filter.$or = [
+      { remarks: { $regex: regex } },
+      { status: { $regex: regex } },
+      { shift: { $regex: regex } },
+      { type: { $regex: regex } },
+    ];
+  }
+
+  // ===================== 4️⃣ Sorting =====================
+  const sortOptions = {};
+  sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
+
+  // ===================== 5️⃣ Execute Query =====================
+  const skip = (page - 1) * limit;
+
+  const [records, totalRecords] = await Promise.all([
+    Attendance.find(filter)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
+      .populate("employee", "fullName avatar username role")
+      .populate("department", "name"),
+    Attendance.countDocuments(filter),
+  ]);
+
+  const totalPages = Math.ceil(totalRecords / limit);
+
+  // ===================== 6️⃣ Respond =====================
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        records,
+        pagination: {
+          page,
+          limit,
+          totalRecords,
+          totalPages,
+        },
+      },
+      "Attendance records fetched successfully"
+    )
+  );
+});
+export { createAttendance, updateAttendance, getAllAttendance };

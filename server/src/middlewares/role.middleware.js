@@ -1,12 +1,5 @@
 import { ApiError } from "../utils/ApiError.js";
 
-
-/**
- * Middleware to restrict access based on user roles.
- * 
- * @param  {...string} allowedRoles - One or more roles allowed to access the route
- * @returns {Function} Express middleware
- */
 export const roleBasedAccess = (...allowedRoles) => {
   return (req, res, next) => {
     const user = req.user;
