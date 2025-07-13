@@ -84,7 +84,16 @@ const AttendanceCalendarView = ({ filters = {} }) => {
 
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      const dayData = records.find((r) => r.date?.startsWith(dateStr));
+      
+      // Fix: Convert attendance record dates to local date strings for proper matching
+      const dayData = records.find((r) => {
+        if (!r.date) return false;
+        // Convert the attendance date to local date string for comparison
+        const attendanceDate = new Date(r.date);
+        const attendanceDateStr = attendanceDate.toISOString().split('T')[0];
+        return attendanceDateStr === dateStr;
+      });
+      
       const isToday = todayStr === dateStr;
       const isVisible = statusFilter === "all" || dayData?.status === statusFilter;
       if (!isVisible) continue;

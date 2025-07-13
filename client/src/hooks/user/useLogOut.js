@@ -2,7 +2,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logoutUser, clearUser, clearError } from "../../store/authSlice";
 import { toast } from "react-toastify";
-import { resetAppState } from "../../store/actions"; // ✅ GLOBAL STATE RESET
+import { resetAppState } from "../../store/actions";
 
 const useLogOut = (onSuccess = () => {}) => {
   const dispatch = useDispatch();
@@ -11,26 +11,30 @@ const useLogOut = (onSuccess = () => {}) => {
 
   const handleLogout = async () => {
     try {
-      await dispatch(logoutUser()).unwrap(); // ✅ Throws if error
+      // Call logout API (removes refresh token cookie on server)
+      await dispatch(logoutUser()).unwrap();
 
+      // Clear access token and state
+      localStorage.removeItem("authToken");
       dispatch(clearUser());
       dispatch(resetAppState());
-      toast.success("✅ Logged out successfully");
 
-      onSuccess(); // optional callback for modal close, etc.
+      toast.success("Logged out successfully");
+      onSuccess(); // Optionally run a callback (e.g., close modal)
       navigate("/login");
     } catch (err) {
-      // Still reset state even on failure (e.g. expired session)
+      // Fallback in case of logout API failure
       dispatch(clearUser());
       dispatch(clearError());
       dispatch(resetAppState());
+      localStorage.removeItem("authToken");
 
       const message =
         typeof err === "string"
           ? err
           : err?.message || "Logout failed or session expired";
 
-      toast.warn(`${message}`);
+      toast.warn(message);
       navigate("/login");
     }
   };

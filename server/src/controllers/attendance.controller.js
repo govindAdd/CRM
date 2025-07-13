@@ -486,7 +486,18 @@ const autoFillWeekOffs = asyncHandler(async (req, res) => {
     )
   );
 });
+export const deleteAllWeekOffs = asyncHandler(async (req, res) => {
+  const result = await Attendance.deleteMany({
+    status: { $regex: /^week-off$/i }, // Case-insensitive match
+    type: "system",
+    isDeleted: false,
+  });
 
+  res.status(200).json({
+    success: true,
+    message: `${result.deletedCount} 'week-off' records deleted successfully.`,
+  });
+});
 export {
   createAttendance,
   updateAttendance,

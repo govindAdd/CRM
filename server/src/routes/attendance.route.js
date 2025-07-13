@@ -6,12 +6,18 @@ import {
   updateAttendance,
   getAllAttendance,
   autoFillWeekOffs,
+  deleteAllWeekOffs
 } from "../controllers/attendance.controller.js";
 const router = express.Router();
 
 // Only verified users can create/update attendance
 router.post("/", verifyJWT, createAttendance);
-
+router.delete(
+  "/delete-weekoffs",
+  verifyJWT,
+  roleBasedAccess("admin", "superadmin"),
+  deleteAllWeekOffs
+);
 router.put(
   "/:id",
   verifyJWT,

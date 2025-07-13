@@ -63,6 +63,6 @@ router.post("/reset-password/:token", resetPassword);
 router.post("/refresh", refreshAccessToken);
 
 // ✅ PUBLIC PROFILE route — PLACE THIS LAST
-router.get("/:username", getPublicUserProfile);
+router.get("/user/:username", getPublicUserProfile);
 
 export default router;

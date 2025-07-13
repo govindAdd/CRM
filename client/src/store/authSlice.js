@@ -28,7 +28,7 @@ export const loginUser = createAsyncThunk(
       const { accessToken, user } = res.data?.data || {};
 
       if (accessToken) {
-        localStorage.setItem('authToken', accessToken);
+        localStorage.setItem('authToken', accessToken); // ✅ Store access token only
       }
 
       return user;
@@ -43,8 +43,9 @@ export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-      await api.post('/users/logout');
-      localStorage.removeItem('authToken');
+      await api.post('/users/logout'); // Refresh token is cleared server-side
+
+      localStorage.removeItem('authToken'); // ✅ Clear access token
     } catch (err) {
       return rejectWithValue(err?.response?.data?.message || 'Logout failed');
     }
@@ -89,7 +90,7 @@ const authSlice = createSlice({
     loading: false,
     error: null,
     isAuthenticated: false,
-    isInitializing: true, // New state for initialization
+    isInitializing: true,
   },
   reducers: {
     setUser: (state, action) => {
@@ -195,7 +196,7 @@ const authSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Global Reset
+      // Reset entire state
       .addCase(resetAppState, () => ({
         user: null,
         loading: false,

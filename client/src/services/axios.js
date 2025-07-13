@@ -3,7 +3,7 @@ import axios from "axios";
 // Create Axios instance
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_SERVER_URL}/api/v1`,
-  withCredentials: true,
+  withCredentials: true, // ✅ Important for HttpOnly cookies
   timeout: 10000,
   headers: {
     Accept: "application/json",
@@ -11,7 +11,7 @@ const api = axios.create({
   },
 });
 
-// Request Interceptor
+// ========================= Request Interceptor ========================= //
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("authToken");
@@ -23,44 +23,45 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor (for token refresh)
+// ========================= Response Interceptor ========================= //
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     const { response } = error;
-    // Handle 401 (Unauthorized) only once
+
     if (response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        // Attempt to refresh the token
+        // ✅ Attempt to refresh access token via HttpOnly cookie
         const res = await api.post("/users/refresh");
 
-        const newToken = res.data?.data?.accessToken;
+        const { accessToken, user } = res.data?.data || {};
 
-        if (newToken) {
-          localStorage.setItem("authToken", newToken);
+        if (accessToken) {
+          // ✅ Save new access token only
+          localStorage.setItem("authToken", accessToken);
 
-          // Update Redux user state
+          // ✅ Update Redux state with fresh user info
           const { store } = await import("../store/store.js");
           const { setUser } = await import("../store/authSlice.js");
-
-          if (res.data?.data?.user) {
-            store.dispatch(setUser(res.data.data.user));
+          if (user) {
+            store.dispatch(setUser(user));
           }
 
-          // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          // 🔁 Retry the original failed request with new token
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // Refresh failed → logout
+        // ❌ Refresh failed — force logout
         const { store } = await import("../store/store.js");
         const { clearUser } = await import("../store/authSlice.js");
 
         localStorage.removeItem("authToken");
         store.dispatch(clearUser());
+
         return Promise.reject(refreshError);
       }
     }

@@ -83,7 +83,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, safeUser, "User registered successfully"));
 });
 
-// ============================ Login ============================
+// ============================ LOGIN ============================
 const loginUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
 
@@ -91,7 +91,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Email/Username and password are required");
   }
 
-  // Find user by email or username
+  // 🔍 Find user by email or username
   const user = await User.findOne({
     $or: [
       { email: email?.toLowerCase() },
@@ -104,21 +104,24 @@ const loginUser = asyncHandler(async (req, res) => {
   const isValid = await user.isPasswordCorrect(password);
   if (!isValid) throw new ApiError(401, "Invalid credentials");
 
-  // Generate tokens
+  // 🔐 Generate tokens
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
 
-  // Track login
+  // 📍 Track login activity
   user.loginHistory.unshift({
     ip: req.ip,
     userAgent: req.get("User-Agent"),
   });
   user.loginHistory = user.loginHistory.slice(0, 2);
+
+  // 💾 Store refresh token in DB (rotate on every login)
+  user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
 
-  // Prepare safe user for frontend
+  // 🧼 Sanitize user data
   const safeUser = await User.findById(user._id).select("-password -refreshToken");
 
-  // Set secure cookies
+  // 🍪 Cookie settings
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -126,6 +129,7 @@ const loginUser = asyncHandler(async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   };
 
+  // ✅ Send cookies and response
   return res
     .status(200)
     .cookie("accessToken", accessToken, cookieOptions)
@@ -135,8 +139,8 @@ const loginUser = asyncHandler(async (req, res) => {
         200,
         {
           user: safeUser,
-          accessToken,
-          refreshToken,
+          accessToken,      // optional: frontend can ignore this if using cookie
+          refreshToken,     // optional: avoid in frontend in production
         },
         "User logged in successfully"
       )
@@ -145,26 +149,26 @@ const loginUser = asyncHandler(async (req, res) => {
 
 // ============================ Logout ============================
 const logoutUser = asyncHandler(async (req, res) => {
-  // Ensure user is authenticated
-  if (!req.user || !req.user._id) {
+  const userId = req?.user?._id;
+
+  if (!userId) {
     throw new ApiError(401, "Unauthorized request - user not found");
   }
 
-  // Invalidate the refresh token in DB
+  // ❌ Invalidate the stored refresh token
   await User.findByIdAndUpdate(
-    req.user._id,
+    userId,
     { $unset: { refreshToken: "" } },
     { new: true }
   );
 
-  // Cookie options matching login and refresh
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "Strict",
   };
 
-  // Clear tokens from cookies
+  // ❌ Clear cookies
   res
     .clearCookie("accessToken", cookieOptions)
     .clearCookie("refreshToken", cookieOptions);
@@ -523,59 +527,37 @@ const getUserDepartment = asyncHandler(async (req, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken =
-    req.cookies?.refreshToken || req.body?.refreshToken;
-
-  if (!incomingRefreshToken) {
-    throw new ApiError(401, "Unauthorized: No refresh token provided");
+  const tokenFromCookie = req.cookies?.refreshToken;
+  if (!tokenFromCookie) {
+    throw new ApiError(401, "No refresh token provided");
   }
 
   try {
-    // Verify the incoming refresh token
-    const decoded = jwt.verify(
-      incomingRefreshToken,
-      process.env.REFRESH_TOKEN_SECRET
-    );
-
-    // Check if user exists
+    const decoded = jwt.verify(tokenFromCookie, process.env.REFRESH_TOKEN_SECRET);
     const user = await User.findById(decoded?._id);
-    if (!user) {
-      throw new ApiError(401, "Unauthorized: User not found");
+    if (!user) throw new ApiError(401, "User not found");
+
+    if (user.refreshToken !== tokenFromCookie) {
+      throw new ApiError(401, "Invalid refresh token");
     }
 
-    // Ensure the refresh token matches what's in DB
-    if (user.refreshToken !== incomingRefreshToken) {
-      throw new ApiError(401, "Unauthorized: Token expired or already used");
-    }
-
-    // Generate new access and refresh tokens
     const { accessToken, refreshToken: newRefreshToken } =
       await generateAccessAndRefreshTokens(user._id);
 
-    // Set secure cookie options
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    };
+    user.refreshToken = newRefreshToken;
+    await user.save();
 
-    // Set refreshed tokens in cookies
     res
-      .cookie("accessToken", accessToken, cookieOptions)
-      .cookie("refreshToken", newRefreshToken, cookieOptions);
-
-    // Respond with new tokens
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        { accessToken, refreshToken: newRefreshToken },
-        "Access token refreshed successfully"
-      )
-    );
-  } catch (error) {
-    console.error("🔐 Refresh token error:", error.message);
-    throw new ApiError(401, "Unauthorized: Invalid or expired refresh token");
+      .cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "Strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      })
+      .status(200)
+      .json(new ApiResponse(200, { accessToken, user }, "Refreshed successfully"));
+  } catch (err) {
+    throw new ApiError(401, "Invalid or expired refresh token");
   }
 });
 

@@ -6,7 +6,7 @@ export const fetchPublicProfile = createAsyncThunk(
   "publicProfile/fetchPublicProfile",
   async (username, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/users/${username}`);
+      const res = await api.get(`/users/user/${username}`);
       return res.data.data; // { employee, hr }
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Error loading profile");

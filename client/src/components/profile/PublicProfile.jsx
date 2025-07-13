@@ -123,7 +123,7 @@ const PublicProfilePage = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await api.get(`/users/${username}`);
+        const res = await api.get(`/users/user/${username}`);
         setEmployee(res.data?.data?.employee);
         setHr(res.data?.data?.hr);
       } catch (err) {
