@@ -89,20 +89,26 @@ const authSlice = createSlice({
     loading: false,
     error: null,
     isAuthenticated: false,
+    isInitializing: true, // New state for initialization
   },
   reducers: {
     setUser: (state, action) => {
       state.user = action.payload;
       state.isAuthenticated = true;
       state.error = null;
+      state.isInitializing = false;
     },
     clearUser: (state) => {
       state.user = null;
       state.isAuthenticated = false;
       state.error = null;
+      state.isInitializing = false;
     },
     clearError: (state) => {
       state.error = null;
+    },
+    setInitializing: (state, action) => {
+      state.isInitializing = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -116,11 +122,13 @@ const authSlice = createSlice({
         state.user = action.payload;
         state.isAuthenticated = true;
         state.loading = false;
+        state.isInitializing = false;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         state.isAuthenticated = false;
+        state.isInitializing = false;
       })
 
       // Login
@@ -132,11 +140,13 @@ const authSlice = createSlice({
         state.user = action.payload;
         state.isAuthenticated = true;
         state.loading = false;
+        state.isInitializing = false;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         state.isAuthenticated = false;
+        state.isInitializing = false;
       })
 
       // Logout
@@ -149,10 +159,12 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.loading = false;
         state.error = null;
+        state.isInitializing = false;
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.isInitializing = false;
       })
 
       // Forgot Password
@@ -189,10 +201,11 @@ const authSlice = createSlice({
         loading: false,
         error: null,
         isAuthenticated: false,
+        isInitializing: true,
       }));
   },
 });
 
 // ===================== EXPORTS =====================
-export const { setUser, clearUser, clearError } = authSlice.actions;
+export const { setUser, clearUser, clearError, setInitializing } = authSlice.actions;
 export default authSlice.reducer;

@@ -11,11 +11,12 @@ import PublicProfilePage from "./pages/PublicProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
 import Department from "./pages/Department";
 import AttendancePage from "./pages/AttendancePage";
+import AuthInitializer from "./components/AuthInitializer";
 
 import "./App.css";
 function App() {
   return (
-    <>
+    <AuthInitializer>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
@@ -67,7 +68,7 @@ function App() {
         draggable
         theme="colored"
       />
-    </>
+    </AuthInitializer>
   );
 }
 

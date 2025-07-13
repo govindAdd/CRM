@@ -35,23 +35,19 @@ api.interceptors.response.use(
 
       try {
         // Attempt to refresh the token
-        const res = await axios.post(
-          `${import.meta.env.VITE_SERVER_URL}/api/v1/users/refresh`,
-          {},
-          { withCredentials: true }
-        );
+        const res = await api.post("/users/refresh");
 
-        const newToken = res.data?.accessToken;
+        const newToken = res.data?.data?.accessToken;
 
         if (newToken) {
           localStorage.setItem("authToken", newToken);
 
-          // Optional: update Redux user
+          // Update Redux user state
           const { store } = await import("../store/store.js");
           const { setUser } = await import("../store/authSlice.js");
 
-          if (res.data.user) {
-            store.dispatch(setUser(res.data.user));
+          if (res.data?.data?.user) {
+            store.dispatch(setUser(res.data.data.user));
           }
 
           // Retry original request with new token
@@ -61,9 +57,10 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // Refresh failed → logout
         const { store } = await import("../store/store.js");
-        const { logoutUser } = await import("../store/authSlice.js");
+        const { clearUser } = await import("../store/authSlice.js");
 
-        store.dispatch(logoutUser());
+        localStorage.removeItem("authToken");
+        store.dispatch(clearUser());
         return Promise.reject(refreshError);
       }
     }
