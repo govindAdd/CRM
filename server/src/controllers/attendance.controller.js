@@ -3,7 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { isValidObjectId } from "mongoose";
-
+import { User } from "../models/user.model.js";
 const ALLOWED_STATUS = ["present", "absent", "half-day", "leave", "week-off"];
 const ALLOWED_SHIFT = ["morning", "evening", "night"];
 const ALLOWED_TYPE = ["manual", "biometric", "web", "mobile", "system"];

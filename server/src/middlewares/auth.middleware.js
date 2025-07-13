@@ -6,7 +6,6 @@ import { User } from "../models/user.model.js";
 // Middleware function to verify JWT token
 // Middleware function to verify JWT token
 export const verifyJWT = asyncHandler(async (req, res, next) => {
-  // Try to extract token from cookies or Authorization header
   const token =
     req.cookies?.accessToken ||
     req.header("Authorization")?.replace("Bearer ", "");
@@ -16,11 +15,9 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Verify the token
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-
-    // Find user and exclude sensitive fields
     const user = await User.findById(decoded._id).select("-password -refreshToken");
+
     if (!user) {
       throw new ApiError(401, "Invalid access token: User not found");
     }

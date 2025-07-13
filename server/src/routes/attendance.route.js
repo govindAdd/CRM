@@ -5,6 +5,7 @@ import {
   createAttendance,
   updateAttendance,
   getAllAttendance,
+  autoFillWeekOffs,
 } from "../controllers/attendance.controller.js";
 const router = express.Router();
 
@@ -25,4 +26,12 @@ router.get(
   roleBasedAccess("hr", "manager", "superadmin", "head", "admin", "employee"),
   getAllAttendance
 );
+router.post(
+  "/auto-fill-week-offs",
+  verifyJWT,
+  roleBasedAccess("admin", "hr", "superadmin", "manager"),
+  autoFillWeekOffs
+);
+
+
 export default router;
