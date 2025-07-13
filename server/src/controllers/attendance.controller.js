@@ -62,13 +62,22 @@ const createAttendance = asyncHandler(async (req, res) => {
 
   // 4️⃣ Enum validation
   if (!ALLOWED_STATUS.includes(status)) {
-    throw new ApiError(400, `Invalid status. Allowed: ${ALLOWED_STATUS.join(", ")}`);
+    throw new ApiError(
+      400,
+      `Invalid status. Allowed: ${ALLOWED_STATUS.join(", ")}`
+    );
   }
   if (shift && !ALLOWED_SHIFT.includes(shift)) {
-    throw new ApiError(400, `Invalid shift. Allowed: ${ALLOWED_SHIFT.join(", ")}`);
+    throw new ApiError(
+      400,
+      `Invalid shift. Allowed: ${ALLOWED_SHIFT.join(", ")}`
+    );
   }
   if (type && !ALLOWED_TYPE.includes(type)) {
-    throw new ApiError(400, `Invalid type. Allowed: ${ALLOWED_TYPE.join(", ")}`);
+    throw new ApiError(
+      400,
+      `Invalid type. Allowed: ${ALLOWED_TYPE.join(", ")}`
+    );
   }
 
   // 5️⃣ Location validation
@@ -80,7 +89,10 @@ const createAttendance = asyncHandler(async (req, res) => {
       !isLatInRange(location.lat) ||
       !isLngInRange(location.lng)
     ) {
-      throw new ApiError(400, "Invalid location. lat must be [-90,90], lng must be [-180,180]");
+      throw new ApiError(
+        400,
+        "Invalid location. lat must be [-90,90], lng must be [-180,180]"
+      );
     }
   }
 
@@ -106,7 +118,10 @@ const createAttendance = asyncHandler(async (req, res) => {
   if (remarks) {
     remarks = remarks.trim();
     if (remarks.length > MAX_REMARKS_LENGTH) {
-      throw new ApiError(400, `Remarks too long (max ${MAX_REMARKS_LENGTH} chars)`);
+      throw new ApiError(
+        400,
+        `Remarks too long (max ${MAX_REMARKS_LENGTH} chars)`
+      );
     }
   }
 
@@ -116,7 +131,10 @@ const createAttendance = asyncHandler(async (req, res) => {
     date: attendanceDate,
   });
   if (existing) {
-    throw new ApiError(409, "Attendance for this employee and date already exists");
+    throw new ApiError(
+      409,
+      "Attendance for this employee and date already exists"
+    );
   }
 
   // 9️⃣ Build attendance object only with present fields
@@ -127,7 +145,8 @@ const createAttendance = asyncHandler(async (req, res) => {
   };
   if (shift) attendanceObj.shift = shift;
   if (typeof clockInDate !== "undefined") attendanceObj.clockIn = clockInDate;
-  if (typeof clockOutDate !== "undefined") attendanceObj.clockOut = clockOutDate;
+  if (typeof clockOutDate !== "undefined")
+    attendanceObj.clockOut = clockOutDate;
   if (remarks) attendanceObj.remarks = remarks;
   if (location) attendanceObj.location = location;
   if (type) attendanceObj.type = type;
@@ -149,7 +168,9 @@ const createAttendance = asyncHandler(async (req, res) => {
 const updateAttendance = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const user = req.user;
-  const isPrivileged = ["admin", "hr", "superadmin", "manager"].includes(user.role);
+  const isPrivileged = ["admin", "hr", "superadmin", "manager"].includes(
+    user.role
+  );
 
   if (!isValidObjectId(id)) {
     throw new ApiError(400, "Invalid attendance ID");
@@ -171,20 +192,15 @@ const updateAttendance = asyncHandler(async (req, res) => {
       String(attendance.employee) !== String(user._id) ||
       recordDate.getTime() !== today.getTime()
     ) {
-      throw new ApiError(403, "You can only update your own attendance for today");
+      throw new ApiError(
+        403,
+        "You can only update your own attendance for today"
+      );
     }
   }
 
   // Only allow updating certain fields
-  let {
-    status,
-    shift,
-    clockIn,
-    clockOut,
-    remarks,
-    location,
-    type,
-  } = req.body;
+  let { status, shift, clockIn, clockOut, remarks, location, type } = req.body;
 
   // Defensive: treat empty strings as missing
   status = status?.trim?.() || status;
@@ -195,18 +211,25 @@ const updateAttendance = asyncHandler(async (req, res) => {
   // Validate and assign fields if present
   if (status) {
     if (!ALLOWED_STATUS.includes(status)) {
-      throw new ApiError(400, `Invalid status. Allowed: ${ALLOWED_STATUS.join(", ")}`);
+      throw new ApiError(
+        400,
+        `Invalid status. Allowed: ${ALLOWED_STATUS.join(", ")}`
+      );
     }
     attendance.status = status;
   }
   if (shift) {
     if (!ALLOWED_SHIFT.includes(shift)) {
-      throw new ApiError(400, `Invalid shift. Allowed: ${ALLOWED_SHIFT.join(", ")}`);
+      throw new ApiError(
+        400,
+        `Invalid shift. Allowed: ${ALLOWED_SHIFT.join(", ")}`
+      );
     }
     attendance.shift = shift;
   }
   let clockInDate, clockOutDate;
-  let clockInChanged = false, clockOutChanged = false;
+  let clockInChanged = false,
+    clockOutChanged = false;
   if (clockIn) {
     clockInDate = new Date(clockIn);
     if (isNaN(clockInDate.getTime())) {
@@ -229,7 +252,10 @@ const updateAttendance = asyncHandler(async (req, res) => {
   if (remarks) {
     remarks = remarks.trim();
     if (remarks.length > MAX_REMARKS_LENGTH) {
-      throw new ApiError(400, `Remarks too long (max ${MAX_REMARKS_LENGTH} chars)`);
+      throw new ApiError(
+        400,
+        `Remarks too long (max ${MAX_REMARKS_LENGTH} chars)`
+      );
     }
     attendance.remarks = remarks;
   }
@@ -241,25 +267,41 @@ const updateAttendance = asyncHandler(async (req, res) => {
       !isLatInRange(location.lat) ||
       !isLngInRange(location.lng)
     ) {
-      throw new ApiError(400, "Invalid location. lat must be [-90,90], lng must be [-180,180]");
+      throw new ApiError(
+        400,
+        "Invalid location. lat must be [-90,90], lng must be [-180,180]"
+      );
     }
     attendance.location = location;
   }
   if (type) {
     if (!ALLOWED_TYPE.includes(type)) {
-      throw new ApiError(400, `Invalid type. Allowed: ${ALLOWED_TYPE.join(", ")}`);
+      throw new ApiError(
+        400,
+        `Invalid type. Allowed: ${ALLOWED_TYPE.join(", ")}`
+      );
     }
     attendance.type = type;
   }
 
   // Recalculate isLate and overtimeMinutes if clockIn or clockOut changed
-  if ((clockInChanged || clockOutChanged) && attendance.clockIn && attendance.shift) {
+  if (
+    (clockInChanged || clockOutChanged) &&
+    attendance.clockIn &&
+    attendance.shift
+  ) {
     const shiftStart = { morning: 9, evening: 14, night: 21 }[attendance.shift];
     const hour = attendance.clockIn.getHours();
     attendance.isLate = hour > shiftStart;
   }
-  if ((clockInChanged || clockOutChanged) && attendance.clockIn && attendance.clockOut) {
-    const worked = Math.floor((attendance.clockOut - attendance.clockIn) / 60000);
+  if (
+    (clockInChanged || clockOutChanged) &&
+    attendance.clockIn &&
+    attendance.clockOut
+  ) {
+    const worked = Math.floor(
+      (attendance.clockOut - attendance.clockIn) / 60000
+    );
     attendance.overtimeMinutes = worked > 480 ? worked - 480 : 0;
   }
 
@@ -296,7 +338,10 @@ const getAllAttendance = asyncHandler(async (req, res) => {
   search = search.trim().toLowerCase();
 
   if (status && !ALLOWED_STATUS.includes(status)) {
-    throw new ApiError(400, `Invalid status. Allowed: ${ALLOWED_STATUS.join(", ")}`);
+    throw new ApiError(
+      400,
+      `Invalid status. Allowed: ${ALLOWED_STATUS.join(", ")}`
+    );
   }
 
   if (employee && !isValidObjectId(employee)) {
@@ -374,4 +419,77 @@ const getAllAttendance = asyncHandler(async (req, res) => {
     )
   );
 });
-export { createAttendance, updateAttendance, getAllAttendance };
+
+const autoFillWeekOffs = asyncHandler(async (req, res) => {
+  const { startDate, endDate } = req.body;
+
+  // 1️⃣ Validate dates
+  if (!startDate || !endDate) {
+    throw new ApiError(400, "Start and end dates are required");
+  }
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  if (isNaN(start) || isNaN(end) || start > end) {
+    throw new ApiError(400, "Invalid date range");
+  }
+
+  // Normalize to start of day
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  // 2️⃣ Get all users with active departments
+  const users = await User.find({ isBlocked: { $ne: true } }).select("_id");
+
+  // 3️⃣ Iterate over each day and user
+  const weekOffRecords = [];
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const currentDate = new Date(d);
+
+    // Check if it's Sunday (0 = Sunday)
+    if (currentDate.getDay() !== 0) continue;
+
+    for (const user of users) {
+      // Prevent duplicates
+      const existing = await Attendance.findOne({
+        employee: user._id,
+        date: currentDate,
+      });
+
+      if (!existing) {
+        weekOffRecords.push({
+          employee: user._id,
+          date: new Date(currentDate),
+          status: "week-off",
+          type: "system",
+        });
+      }
+    }
+  }
+
+  // 4️⃣ Bulk insert week-off attendance
+  if (weekOffRecords.length > 0) {
+    await Attendance.insertMany(weekOffRecords);
+  }
+
+  return res.status(201).json(
+    new ApiResponse(
+      201,
+      {
+        inserted: weekOffRecords.length,
+        from: start.toISOString().split("T")[0],
+        to: end.toISOString().split("T")[0],
+      },
+      "Week-offs auto-filled successfully"
+    )
+  );
+});
+
+export {
+  createAttendance,
+  updateAttendance,
+  getAllAttendance,
+  autoFillWeekOffs,
+};

@@ -16,10 +16,14 @@ const VALID_ROLES = ["superadmin", "admin", "manager","head", "employee",  "hr",
 // Helper to generate access & refresh tokens
 const generateAccessAndRefreshTokens = async (userId) => {
   const user = await User.findById(userId);
-  const refreshToken = user.generateRefreshToken();
+  if (!user) throw new Error("User not found while generating tokens");
+
   const accessToken = user.generateAccessToken();
+  const refreshToken = user.generateRefreshToken();
+
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
+
   return { accessToken, refreshToken };
 };
 
@@ -36,21 +40,28 @@ const registerUser = asyncHandler(async (req, res) => {
     designation,
   } = req.body;
 
-  if ([fullName, email, username, password].some((f) => !f?.trim())) {
+  // Validate required fields
+  if ([fullName, email, username, password].some((field) => !field?.trim())) {
     throw new ApiError(400, "Required fields missing");
   }
 
-  const exists = await User.findOne({ $or: [{ email }, { username }] });
-  if (exists) throw new ApiError(409, "Email or username already exists");
+  // Check for existing user
+  const existingUser = await User.findOne({
+    $or: [{ email: email.toLowerCase() }, { username: username.toLowerCase() }],
+  });
+  if (existingUser) {
+    throw new ApiError(409, "Email or username already exists");
+  }
 
+  // Handle avatar upload
   const avatarPath = req.files?.avatar?.[0]?.path;
   if (!avatarPath) throw new ApiError(400, "Avatar is required");
 
   const avatar = await uploadOnCloudinary(avatarPath);
   if (!avatar?.url) throw new ApiError(400, "Avatar upload failed");
 
-
-  const user = await User.create({
+  // Create new user
+  const newUser = await User.create({
     fullName,
     email: email.toLowerCase(),
     username: username.toLowerCase(),
@@ -62,21 +73,22 @@ const registerUser = asyncHandler(async (req, res) => {
     designation,
   });
 
-  const createdUser = await User.findById(user._id).select(
+  // Return safe user info
+  const safeUser = await User.findById(newUser._id).select(
     "-password -refreshToken"
   );
-  res
+
+  return res
     .status(201)
-    .json(new ApiResponse(201, createdUser, "User registered successfully"));
+    .json(new ApiResponse(201, safeUser, "User registered successfully"));
 });
 
-/// ============================ Login ============================
+// ============================ Login ============================
 const loginUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
 
-  // Require either email or username
-  if (!email && !username) {
-    throw new ApiError(400, "Either email or username is required");
+  if (!password || (!email && !username)) {
+    throw new ApiError(400, "Email/Username and password are required");
   }
 
   // Find user by email or username
@@ -85,22 +97,15 @@ const loginUser = asyncHandler(async (req, res) => {
       { email: email?.toLowerCase() },
       { username: username?.toLowerCase() },
     ],
-  });
+  }).select("+password");
 
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
+  if (!user) throw new ApiError(404, "User not found");
 
-  // Verify password
-  const isPasswordValid = await user.isPasswordCorrect(password);
-  if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid credentials");
-  }
+  const isValid = await user.isPasswordCorrect(password);
+  if (!isValid) throw new ApiError(401, "Invalid credentials");
 
   // Generate tokens
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
-    user._id
-  );
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
 
   // Track login
   user.loginHistory.unshift({
@@ -110,19 +115,17 @@ const loginUser = asyncHandler(async (req, res) => {
   user.loginHistory = user.loginHistory.slice(0, 2);
   await user.save({ validateBeforeSave: false });
 
-  // Remove sensitive fields from returned user
-  const safeUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
+  // Prepare safe user for frontend
+  const safeUser = await User.findById(user._id).select("-password -refreshToken");
 
-  // Set cookies (secure: true in production)
+  // Set secure cookies
   const cookieOptions = {
     httpOnly: true,
-    // secure: process.env.NODE_ENV === "production",
-    // sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   };
 
-  // Send response
   return res
     .status(200)
     .cookie("accessToken", accessToken, cookieOptions)
@@ -130,7 +133,11 @@ const loginUser = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { user: safeUser, accessToken, refreshToken },
+        {
+          user: safeUser,
+          accessToken,
+          refreshToken,
+        },
         "User logged in successfully"
       )
     );
@@ -138,28 +145,33 @@ const loginUser = asyncHandler(async (req, res) => {
 
 // ============================ Logout ============================
 const logoutUser = asyncHandler(async (req, res) => {
+  // Ensure user is authenticated
   if (!req.user || !req.user._id) {
     throw new ApiError(401, "Unauthorized request - user not found");
   }
 
-  // Clear refreshToken from DB
+  // Invalidate the refresh token in DB
   await User.findByIdAndUpdate(
     req.user._id,
-    { $set: { refreshToken: undefined } },
+    { $unset: { refreshToken: "" } },
     { new: true }
   );
 
+  // Cookie options matching login and refresh
   const cookieOptions = {
     httpOnly: true,
-    // secure: process.env.NODE_ENV === "production", // Only true in production
-    // sameSite: "Lax", // Helps with CSRF
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
   };
 
-  return res
-    .status(200)
+  // Clear tokens from cookies
+  res
     .clearCookie("accessToken", cookieOptions)
-    .clearCookie("refreshToken", cookieOptions)
-    .json(new ApiResponse(200, {}, "User logged out successfully"));
+    .clearCookie("refreshToken", cookieOptions);
+
+  return res.status(200).json(
+    new ApiResponse(200, {}, "User logged out successfully")
+  );
 });
 
 // ============================ Update Logged-In Profile ============================
@@ -510,6 +522,63 @@ const getUserDepartment = asyncHandler(async (req, res) => {
   );
 });
 
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies?.refreshToken || req.body?.refreshToken;
+
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "Unauthorized: No refresh token provided");
+  }
+
+  try {
+    // Verify the incoming refresh token
+    const decoded = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    // Check if user exists
+    const user = await User.findById(decoded?._id);
+    if (!user) {
+      throw new ApiError(401, "Unauthorized: User not found");
+    }
+
+    // Ensure the refresh token matches what's in DB
+    if (user.refreshToken !== incomingRefreshToken) {
+      throw new ApiError(401, "Unauthorized: Token expired or already used");
+    }
+
+    // Generate new access and refresh tokens
+    const { accessToken, refreshToken: newRefreshToken } =
+      await generateAccessAndRefreshTokens(user._id);
+
+    // Set secure cookie options
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    };
+
+    // Set refreshed tokens in cookies
+    res
+      .cookie("accessToken", accessToken, cookieOptions)
+      .cookie("refreshToken", newRefreshToken, cookieOptions);
+
+    // Respond with new tokens
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        { accessToken, refreshToken: newRefreshToken },
+        "Access token refreshed successfully"
+      )
+    );
+  } catch (error) {
+    console.error("🔐 Refresh token error:", error.message);
+    throw new ApiError(401, "Unauthorized: Invalid or expired refresh token");
+  }
+});
+
 // ============================ Module Export ============================
 export {
   registerUser,
@@ -524,5 +593,6 @@ export {
   getPublicUserProfile,
   getCurrentUser,
   deleteUser,
-  getUserDepartment
+  getUserDepartment,
+  refreshAccessToken
 };

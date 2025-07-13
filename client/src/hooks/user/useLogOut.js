@@ -1,9 +1,8 @@
-// src/hooks/user/useLogOut.js
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { logoutUser, clearUser, clearError } from '../../store/authSlice';
-import { toast } from 'react-toastify';
-import { resetAppState } from '../../store/actions'; // ✅ GLOBAL STATE RESET
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { logoutUser, clearUser, clearError } from "../../store/authSlice";
+import { toast } from "react-toastify";
+import { resetAppState } from "../../store/actions"; // ✅ GLOBAL STATE RESET
 
 const useLogOut = (onSuccess = () => {}) => {
   const dispatch = useDispatch();
@@ -12,22 +11,26 @@ const useLogOut = (onSuccess = () => {}) => {
 
   const handleLogout = async () => {
     try {
-      const resultAction = await dispatch(logoutUser());
+      await dispatch(logoutUser()).unwrap(); // ✅ Throws if error
 
-      if (logoutUser.fulfilled.match(resultAction)) {
-        dispatch(clearUser());
-        dispatch(resetAppState()); // ✅ Reset all slices that respond to this action
-        toast.success("Logged out successfully");
-        onSuccess(); // Optional: close modal, clear local UI
-        navigate("/login");
-      } else {
-        throw new Error(resultAction.payload || "Logout failed.");
-      }
+      dispatch(clearUser());
+      dispatch(resetAppState());
+      toast.success("✅ Logged out successfully");
+
+      onSuccess(); // optional callback for modal close, etc.
+      navigate("/login");
     } catch (err) {
-      dispatch(clearUser()); // Clear anyway on error (session timeout, etc.)
+      // Still reset state even on failure (e.g. expired session)
+      dispatch(clearUser());
       dispatch(clearError());
-      dispatch(resetAppState()); // ✅ Reset even if logout failed
-      toast.warn("Session expired or logout failed. Please log in again.");
+      dispatch(resetAppState());
+
+      const message =
+        typeof err === "string"
+          ? err
+          : err?.message || "Logout failed or session expired";
+
+      toast.warn(`${message}`);
       navigate("/login");
     }
   };

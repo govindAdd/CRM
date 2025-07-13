@@ -17,15 +17,15 @@ import logo from "../assets/logoNew.png";
 
 const navItems = [
   { label: "My Profile", icon: FaUser, path: "/profile" },
-  { label: "Department", icon: FaBuilding, path: "/department", role: ["superadmin","admin", "manager", "hr", "head"] },
-  { label: "HR", icon: FaBriefcase, path: "/hr", role: ["superadmin","admin", "manager", "hr",] },
+  { label: "Department", icon: FaBuilding, path: "/department", role: ["superadmin", "admin", "manager", "hr", "head"] },
+  { label: "HR", icon: FaBriefcase, path: "/hr", role: ["superadmin", "admin", "manager", "hr"] },
   { label: "Attendance", icon: FaClock, path: "/attendance" },
-  { label: "After Sales", icon: FaTools, path: "/aftersales", role: ["superadmin","admin", "manager", "hr", "support"] },
-  { label: "Data Mining", icon: FaChartLine, path: "/datamining", role: ["superadmin","admin", "manager", "hr", "analyst"] },
-  { label: "Job Application", icon: FaBriefcase, path: "/jobapplication", role: ["superadmin","admin", "manager", "hr", "hr"] },
-  { label: "Sales", icon: FaChartLine, path: "/sales", role: ["superadmin","admin", "manager", "sales"] },
-  { label: "Training", icon: FaChalkboardTeacher, path: "/training", role: ["superadmin","admin", "manager", "hr", "trainer"] },
-  { label: "Telecom", icon: FaPhoneAlt, path: "/telecom", role: ["superadmin","admin", "manager", "hr"] },
+  { label: "After Sales", icon: FaTools, path: "/aftersales", role: ["superadmin", "admin", "manager", "hr", "support"] },
+  { label: "Data Mining", icon: FaChartLine, path: "/datamining", role: ["superadmin", "admin", "manager", "hr", "analyst"] },
+  { label: "Job Application", icon: FaBriefcase, path: "/jobapplication", role: ["superadmin", "admin", "manager", "hr"] },
+  { label: "Sales", icon: FaChartLine, path: "/sales", role: ["superadmin", "admin", "manager", "sales"] },
+  { label: "Training", icon: FaChalkboardTeacher, path: "/training", role: ["superadmin", "admin", "manager", "hr", "trainer"] },
+  { label: "Telecom", icon: FaPhoneAlt, path: "/telecom", role: ["superadmin", "admin", "manager", "hr"] },
 ];
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -45,7 +45,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       {/* Mobile Hamburger Button */}
       <button
         onClick={() => toggleSidebar(!isOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 w-10 h-10 flex flex-col justify-between items-center p-2 group"
+        className="cursor-pointer md:hidden fixed top-4 left-4 z-50 w-10 h-10 flex flex-col justify-between items-center p-2 group"
         aria-label="Toggle sidebar"
       >
         <span className={`block h-[3px] w-full bg-purple-800 rounded transition-transform duration-300 ${isOpen ? "rotate-45 translate-y-[9px]" : ""}`} />
@@ -73,7 +73,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             src={avatarUrl}
             alt="Avatar"
             loading="lazy"
-            className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border shadow"
+            className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border shadow cursor-pointer"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || "User")}&background=7B2CBF&color=fff`;
@@ -105,7 +105,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                         toggleSidebar(false);
                       });
                     }}
-                    className={`flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    className={`cursor-pointer flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                       isActive
                         ? "bg-purple-100 text-purple-700 font-semibold"
                         : "hover:bg-purple-50 text-gray-700"
@@ -123,8 +123,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         <button
           onClick={handleLogout}
           disabled={loading}
-          className="mt-6 py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold
-                   rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+          className="cursor-pointer mt-6 py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold
+                     rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60"
         >
           <FaSignOutAlt />
           {loading ? "Logging out..." : "Logout"}
@@ -135,7 +135,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       {isOpen && (
         <div
           onClick={() => toggleSidebar(false)}
-          className="fixed inset-0 z-30 md:hidden bg-transparent backdrop-blur-sm"
+          className="cursor-pointer fixed inset-0 z-30 md:hidden bg-transparent backdrop-blur-sm"
         />
       )}
     </>

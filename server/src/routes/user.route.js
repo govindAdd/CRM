@@ -13,6 +13,7 @@ import {
   getCurrentUser,
   deleteUser,
   getUserDepartment,
+  refreshAccessToken,
 } from "../controllers/user.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -59,6 +60,7 @@ router.post(
 router.post("/login", loginUser);
 router.post("/forgot-password", requestPasswordForget);
 router.post("/reset-password/:token", resetPassword);
+router.post("/refresh", refreshAccessToken);
 
 // ✅ PUBLIC PROFILE route — PLACE THIS LAST
 router.get("/:username", getPublicUserProfile);

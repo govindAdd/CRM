@@ -6,37 +6,28 @@ import { User } from "../models/user.model.js";
 // Middleware function to verify JWT token
 // Middleware function to verify JWT token
 export const verifyJWT = asyncHandler(async (req, res, next) => {
+  // Try to extract token from cookies or Authorization header
+  const token =
+    req.cookies?.accessToken ||
+    req.header("Authorization")?.replace("Bearer ", "");
+
+  if (!token) {
+    throw new ApiError(401, "Unauthorized request: No token provided");
+  }
+
   try {
-    // Extract JWT token from cookies or Authorization header
-    const token =
-      req.cookies?.accessToken || // Check for token in cookies
-      req.header("Authorization")?.replace("Bearer ", ""); // Check for token in Authorization header
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    // If token is not found, throw 401 Unauthorized error
-    if (!token) {
-      throw new ApiError(401, "Unauthorized request");
-    }
-
-    // Verify the JWT token
-    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-
-    // Find user corresponding to the token's user ID
-    const user = await User.findById(decodedToken?._id).select(
-      "-password -refreshToken"
-    );
-
-    // If user not found, throw 401 Unauthorized error
+    // Find user and exclude sensitive fields
+    const user = await User.findById(decoded._id).select("-password -refreshToken");
     if (!user) {
-      throw new ApiError(401, "Invalid access token");
+      throw new ApiError(401, "Invalid access token: User not found");
     }
 
-    // Attach user object to the request for further processing
     req.user = user;
-
-    // Call next middleware or route handler
     next();
-  } catch (error) {
-    // If any error occurs during verification, throw 401 Unauthorized error
-    throw new ApiError(401, error?.message || "Invalid access token");
+  } catch (err) {
+    throw new ApiError(401, "Invalid or expired access token");
   }
 });

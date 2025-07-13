@@ -1,7 +1,7 @@
-// src/hooks/useLogin.js
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { loginUser } from '../../store/authSlice';
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { loginUser } from "../../store/authSlice";
+import { toast } from "react-toastify";
 
 const useLogin = () => {
   const dispatch = useDispatch();
@@ -9,9 +9,18 @@ const useLogin = () => {
   const { loading, error } = useSelector((state) => state.auth);
 
   const handleLogin = async (credentials) => {
-    const resultAction = await dispatch(loginUser(credentials));
-    if (loginUser.fulfilled.match(resultAction)) {
-      navigate('/');
+    try {
+      const user = await dispatch(loginUser(credentials)).unwrap();
+      toast.success("Logged in successfully!");
+      navigate("/");
+      return user;
+    } catch (err) {
+      const message =
+        typeof err === "string"
+          ? err
+          : err?.message || "Login failed. Please try again.";
+      toast.error(`${message}`);
+      throw new Error(message);
     }
   };
 

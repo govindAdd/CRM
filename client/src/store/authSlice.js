@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from '../services/axios';
+import api from '../services/axios';
 import { resetAppState } from './actions';
 
 // ========== ASYNC THUNKS ==========
@@ -9,14 +9,12 @@ export const registerUser = createAsyncThunk(
   'auth/registerUser',
   async (formData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/users/register', formData, {
+      const res = await api.post('/users/register', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      return response.data?.data;
-    } catch (error) {
-      return rejectWithValue(
-        error?.response?.data?.message || 'Registration failed'
-      );
+      return res.data?.data;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data?.message || 'Registration failed');
     }
   }
 );
@@ -26,12 +24,16 @@ export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/users/login', credentials);
-      return response.data?.data?.user;
-    } catch (error) {
-      return rejectWithValue(
-        error?.response?.data?.message || 'Login failed. Please try again.'
-      );
+      const res = await api.post('/users/login', credentials);
+      const { accessToken, user } = res.data?.data || {};
+
+      if (accessToken) {
+        localStorage.setItem('authToken', accessToken);
+      }
+
+      return user;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data?.message || 'Login failed');
     }
   }
 );
@@ -41,11 +43,10 @@ export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-      await axios.post('/users/logout');
-    } catch (error) {
-      return rejectWithValue(
-        error?.response?.data?.message || 'Logout failed.'
-      );
+      await api.post('/users/logout');
+      localStorage.removeItem('authToken');
+    } catch (err) {
+      return rejectWithValue(err?.response?.data?.message || 'Logout failed');
     }
   }
 );
@@ -55,12 +56,10 @@ export const forgotPasswordUser = createAsyncThunk(
   'auth/forgotPasswordUser',
   async (email, { rejectWithValue }) => {
     try {
-      const res = await axios.post('/users/forgot-password', { email });
-      return res.data.message;
+      const res = await api.post('/users/forgot-password', { email });
+      return res.data?.message;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data?.message || 'Failed to send reset email'
-      );
+      return rejectWithValue(err?.response?.data?.message || 'Failed to send reset email');
     }
   }
 );
@@ -70,20 +69,18 @@ export const resetPasswordUser = createAsyncThunk(
   'auth/resetPasswordUser',
   async ({ token, password, confirmPassword }, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`/users/reset-password/${token}`, {
+      const res = await api.post(`/users/reset-password/${token}`, {
         password,
         confirmPassword,
       });
-      return res.data.message;
+      return res.data?.message;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data?.message || 'Reset failed'
-      );
+      return rejectWithValue(err?.response?.data?.message || 'Reset failed');
     }
   }
 );
 
-// ========== SLICE ==========
+// ===================== SLICE =====================
 
 const authSlice = createSlice({
   name: 'auth',
@@ -110,7 +107,6 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-
       // Register
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
@@ -186,7 +182,8 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Reset App State
+
+      // Global Reset
       .addCase(resetAppState, () => ({
         user: null,
         loading: false,
@@ -196,5 +193,6 @@ const authSlice = createSlice({
   },
 });
 
+// ===================== EXPORTS =====================
 export const { setUser, clearUser, clearError } = authSlice.actions;
 export default authSlice.reducer;
