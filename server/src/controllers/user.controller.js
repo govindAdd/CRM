@@ -73,14 +73,28 @@ const registerUser = asyncHandler(async (req, res) => {
     designation,
   });
 
-  // Return safe user info
-  const safeUser = await User.findById(newUser._id).select(
-    "-password -refreshToken"
-  );
+  // Generate tokens
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(newUser._id);
 
-  return res
+  // Save refresh token to DB
+  newUser.refreshToken = refreshToken;
+  await newUser.save();
+
+  // Return safe user info
+  const safeUser = await User.findById(newUser._id).select("-password -refreshToken");
+
+  // Set refresh token as HttpOnly cookie
+  res
+    .cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    })
     .status(201)
-    .json(new ApiResponse(201, safeUser, "User registered successfully"));
+    .json(
+      new ApiResponse(201, { accessToken, user: safeUser }, "User registered successfully")
+    );
 });
 
 // ============================ LOGIN ============================
@@ -128,7 +142,6 @@ const loginUser = asyncHandler(async (req, res) => {
     sameSite: "Strict",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   };
-
   // ✅ Send cookies and response
   return res
     .status(200)
