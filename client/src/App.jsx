@@ -11,6 +11,7 @@ import PublicProfilePage from "./pages/PublicProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
 import Department from "./pages/Department";
 import AttendancePage from "./pages/AttendancePage";
+import HrPage from "./pages/HrPage";
 import AuthInitializer from "./components/AuthInitializer";
 
 import "./App.css";
@@ -47,11 +48,19 @@ function App() {
             </PrivateRoute>
           }
         />
-                <Route
+        <Route
           path="/attendance"
           element={
             <PrivateRoute>
               <AttendancePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/hr"
+          element={
+            <PrivateRoute>
+              <HrPage />
             </PrivateRoute>
           }
         />
