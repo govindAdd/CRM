@@ -60,7 +60,7 @@ const AttendanceCalendarView = ({ filters = {} }) => {
     fetchAttendance({ ...filters, startDate, endDate });
   }, [currentDate, filters, fetchAttendance]);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = new Date().toLocaleDateString("en-CA");
   const isCompact = windowWidth <= 1280;
 
   const navigateMonth = (dir) => {
@@ -83,31 +83,24 @@ const AttendanceCalendarView = ({ filters = {} }) => {
     }
 
     for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      
-      // Fix: Convert attendance record dates to local date strings for proper matching
+      const dateStr = new Date(year, month, d).toLocaleDateString("en-CA");
       const dayData = records.find((r) => {
         if (!r.date) return false;
-        // Convert the attendance date to local date string for comparison
-        const attendanceDate = new Date(r.date);
-        const attendanceDateStr = attendanceDate.toISOString().split('T')[0];
+        const attendanceDateStr = new Date(r.date).toLocaleDateString("en-CA");
         return attendanceDateStr === dateStr;
       });
-      
+
       const isToday = todayStr === dateStr;
       const isVisible = statusFilter === "all" || dayData?.status === statusFilter;
       if (!isVisible) continue;
 
       const card = (
         <div
-          className={`
-            aspect-square min-w-[40px] min-h-[40px] max-w-[120px] max-h-[120px]
-            w-full h-full p-2 flex flex-col items-center justify-center
-            transition-all duration-200 border dark:border-gray-700 relative
-            ${isCompact
+          className={`aspect-square min-w-[40px] min-h-[40px] max-w-[120px] max-h-[120px] w-full h-full p-2 flex flex-col items-center justify-center transition-all duration-200 border dark:border-gray-700 relative ${
+            isCompact
               ? `rounded-full ${dayData ? getStatusColor(dayData.status) : "bg-gray-200 dark:bg-gray-700"}`
-              : `rounded-2xl bg-white dark:bg-gray-900 shadow-md hover:shadow-lg ${isToday ? "ring-2 ring-cyan-500 scale-[1.02]" : ""}`}
-          `}
+              : `rounded-2xl bg-white dark:bg-gray-900 shadow-md hover:shadow-lg ${isToday ? "ring-2 ring-cyan-500 scale-[1.02]" : ""}`
+          }`}
           onClick={() => dayData && setSelectedDay(dayData)}
         >
           <span className={`text-sm md:text-base font-semibold ${isCompact ? "text-white" : "text-gray-800 dark:text-white"}`}>
@@ -176,7 +169,7 @@ const AttendanceCalendarView = ({ filters = {} }) => {
 
   const exportToExcel = () => {
     const data = records.map((r) => ({
-      Date: r.date,
+      Date: new Date(r.date).toLocaleDateString("en-IN"),
       Status: getStatusText(r.status),
       ClockIn: r.clockIn ? new Date(r.clockIn).toLocaleTimeString() : "-",
       ClockOut: r.clockOut ? new Date(r.clockOut).toLocaleTimeString() : "-",
@@ -192,7 +185,6 @@ const AttendanceCalendarView = ({ filters = {} }) => {
 
   return (
     <div className="w-full max-w-[1920px] mx-auto p-4 sm:p-6 rounded-xl bg-white dark:bg-gray-900 shadow-lg space-y-6">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 pb-2">
         <div className="flex justify-between items-center">
           <button onClick={() => navigateMonth("prev")} className="btn text-sm sm:text-base lg:text-lg">← Prev</button>
@@ -218,7 +210,6 @@ const AttendanceCalendarView = ({ filters = {} }) => {
         </div>
       </div>
 
-      {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-2 auto-rows-fr min-h-[300px]">
         {isLoading
           ? [...Array(35)].map((_, i) => (
@@ -227,7 +218,6 @@ const AttendanceCalendarView = ({ filters = {} }) => {
           : renderCalendar()}
       </div>
 
-      {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-center text-sm sm:text-base lg:text-lg font-semibold">
         <div className="bg-green-600 text-white p-2 rounded-lg">Present: {summary.present}</div>
         <div className="bg-gray-600 text-white p-2 rounded-lg">Absent: {summary.absent}</div>
@@ -237,17 +227,15 @@ const AttendanceCalendarView = ({ filters = {} }) => {
         <div className="bg-indigo-600 text-white p-2 rounded-lg">Total Days: {summary.total}</div>
       </div>
 
-      {/* Export Buttons */}
       <div className="flex flex-col sm:flex-row gap-2 justify-end">
         <button onClick={exportToExcel} className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-500 w-full sm:w-auto">Export Excel</button>
         <button onClick={handleExportPDF} className="bg-rose-600 text-white px-4 py-2 rounded hover:bg-rose-500 w-full sm:w-auto">Export PDF</button>
       </div>
 
-      {/* Modal */}
       {selectedDay && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
           <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-6 rounded-lg shadow-lg w-full max-w-md mx-auto">
-            <h2 className="text-lg font-bold mb-4">Attendance Details - {selectedDay.date}</h2>
+            <h2 className="text-lg font-bold mb-4">Attendance Details - {new Date(selectedDay.date).toLocaleDateString("en-IN")}</h2>
             <p><strong>Status:</strong> {getStatusText(selectedDay.status)}</p>
             <p><strong>Clock In:</strong> {selectedDay.clockIn ? new Date(selectedDay.clockIn).toLocaleTimeString() : "-"}</p>
             <p><strong>Clock Out:</strong> {selectedDay.clockOut ? new Date(selectedDay.clockOut).toLocaleTimeString() : "-"}</p>
