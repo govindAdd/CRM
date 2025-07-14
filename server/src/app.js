@@ -30,10 +30,24 @@ app.use("/api/v1/users", userRouter);
 import departmentRouter from "./routes/department.route.js";
 // route declearation 
 app.use("/api/v1/departments", departmentRouter);
+
 // routes import Only attendance
 import attendanceRouter from "./routes/attendance.route.js";
 // routes declaration
 app.use("/api/v1/attendance", attendanceRouter);
+
+// route import for HR
+import hrRoutes from "./routes/hr.routes.js";
+// route declearation
+app.use("/api/v1/hr", hrRoutes);
+
+
+
+
+
+
+
+
 // Google
 import session from "express-session";
 import passport from "passport";

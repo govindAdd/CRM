@@ -1,63 +1,128 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema } from "mongoose";
 
-const leaveRequestSchema = new Schema({
-  from: {
-    type: Date,
-    required: true,
-  },
-  to: {
-    type: Date,
-    required: true,
-  },
-  reason: {
-    type: String,
-    trim: true,
-    maxlength: 500,
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending',
-  },
-}, { _id: false, timestamps: true });
-
-const hrSchema = new Schema(
+// ===================== Leave Request Schema =====================
+const leaveRequestSchema = new Schema(
   {
-    employee: {
-      type: mongoose.Types.ObjectId,
-      ref: 'User',
-      required: true,
-      unique: true, // one HR record per employee
-    },
+    from: { type: Date, required: true },
+    to: { type: Date, required: true },
+    reason: { type: String, trim: true, maxlength: 500 },
 
-    leaveRequests: [leaveRequestSchema],
-
-    noticePeriod: {
-      type: String, // e.g. "2 weeks", "1 month"
-      trim: true,
-    },
-
-    onboardingStatus: {
+    status: {
       type: String,
-      enum: ['not-started', 'in-progress', 'completed'],
-      default: 'not-started',
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
     },
 
-    resignationStatus: {
+    type: {
       type: String,
-      enum: ['none', 'resigned', 'accepted', 'rejected'],
-      default: 'none',
+      enum: ["leave", "week-off", "holiday", "other"],
+      default: "leave",
     },
 
-    isSuperAdmin: {
-      type: Boolean,
-      default: false,
+    approvedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
+
+    reviewedAt: { type: Date, default: null },
+    reviewComment: { type: String, trim: true, maxlength: 300 },
   },
   {
+    _id: false,
     timestamps: true,
   }
 );
 
-// Export model
-export const HR = mongoose.model('HR', hrSchema);
+// ===================== HR Schema =====================
+const hrSchema = new Schema(
+  {
+    employee: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+    },
+
+    leaveRequests: [leaveRequestSchema],
+
+    noticePeriod: { type: String, trim: true },
+
+    onboardingStatus: {
+      type: String,
+      enum: ["not-started", "in-progress", "completed"],
+      default: "not-started",
+    },
+
+    resignationStatus: {
+      type: String,
+      enum: ["none", "resigned", "accepted", "rejected"],
+      default: "none",
+    },
+
+    isSuperAdmin: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
+
+// ===================== Indexes =====================
+hrSchema.index({ employee: 1, isDeleted: 1 });
+
+// ===================== Virtuals =====================
+hrSchema.virtual("totalLeaves").get(function () {
+  return this.leaveRequests?.length || 0;
+});
+
+// ===================== Query Helpers =====================
+hrSchema.query.withLeaveStatus = function (status) {
+  return this.where("leaveRequests.status").equals(status);
+};
+
+hrSchema.query.withLeaveType = function (type) {
+  return this.where("leaveRequests.type").equals(type);
+};
+
+// ===================== Pre-find Hook (soft delete filter) =====================
+hrSchema.pre(/^find/, function (next) {
+  if (!this.getFilter().hasOwnProperty("isDeleted")) {
+    this.where({ isDeleted: false });
+  }
+  next();
+});
+
+// ===================== Statics =====================
+hrSchema.statics.getLeaveCountsPerEmployee = async function () {
+  return this.aggregate([
+    { $unwind: "$leaveRequests" },
+    {
+      $group: {
+        _id: "$employee",
+        totalLeaves: { $sum: 1 },
+        pending: {
+          $sum: { $cond: [{ $eq: ["$leaveRequests.status", "pending"] }, 1, 0] },
+        },
+        approved: {
+          $sum: { $cond: [{ $eq: ["$leaveRequests.status", "approved"] }, 1, 0] },
+        },
+        rejected: {
+          $sum: { $cond: [{ $eq: ["$leaveRequests.status", "rejected"] }, 1, 0] },
+        },
+        weekOffs: {
+          $sum: { $cond: [{ $eq: ["$leaveRequests.type", "week-off"] }, 1, 0] },
+        },
+      },
+    },
+  ]);
+};
+
+hrSchema.statics.getLeaveHistory = async function (employeeId) {
+  return this.findOne({ employee: employeeId }, "leaveRequests").lean();
+};
+
+// ===================== Export =====================
+export const HR = mongoose.model("HR", hrSchema);
