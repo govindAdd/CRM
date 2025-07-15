@@ -1,10 +1,11 @@
-// src/store/store.js
 import { configureStore } from '@reduxjs/toolkit';
 import authSlice from './authSlice';
-import publicProfileReducer from "./publicProfileSlice";
-import userReducer from "./userSlice";
-import { departmentReducer, departmentEmployeesReducer } from "./departmentSlice";
-import attendanceReducer from "./attendanceSlice";
+import publicProfileReducer from './publicProfileSlice';
+import userReducer from './userSlice';
+import { departmentReducer, departmentEmployeesReducer } from './departmentSlice';
+import attendanceReducer from './attendanceSlice';
+import hrReducer from './hrSlice';               // ✅ New
+import leaveReducer from './leaveSlice';         // ✅ New
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,8 @@ export const store = configureStore({
     department: departmentReducer,
     departmentEmployees: departmentEmployeesReducer,
     attendance: attendanceReducer,
+    hr: hrReducer,
+    leave: leaveReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

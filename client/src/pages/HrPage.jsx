@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  Suspense,
+  lazy,
+} from "react";
 import Layout from "../layouts/Layout";
-import {
-  EmployeeRecords,
-  LeaveRequests,
-  PendingApprovals,
-  OnboardingEmployees,
-  Resignations,
-  NoticePeriod,
-  ActiveEmployees,
-  SuperAdmins,
-} from "../components/hrTabs";
+import { useSearchParams } from "react-router-dom";
+import Tippy from "@tippyjs/react";
+import "tippy.js/dist/tippy.css";
+import { motion } from "framer-motion";
 import {
   Users,
   CalendarCheck,
@@ -21,9 +22,27 @@ import {
   ShieldCheck,
   Briefcase,
 } from "lucide-react";
-import { motion } from "framer-motion";
 
-const tabs = [
+// Lazy load tab components
+const EmployeeRecords = lazy(() =>
+  import("../components/hrTabs/EmployeeRecords")
+);
+const LeaveRequests = lazy(() => import("../components/hrTabs/LeaveRequests"));
+const PendingApprovals = lazy(() =>
+  import("../components/hrTabs/PendingApprovals")
+);
+const OnboardingEmployees = lazy(() =>
+  import("../components/hrTabs/OnboardingEmployees")
+);
+const Resignations = lazy(() => import("../components/hrTabs/Resignations"));
+const NoticePeriod = lazy(() => import("../components/hrTabs/NoticePeriod"));
+const ActiveEmployees = lazy(() =>
+  import("../components/hrTabs/ActiveEmployees")
+);
+const SuperAdmins = lazy(() => import("../components/hrTabs/SuperAdmins"));
+
+// Tab config
+const hrTabs = [
   {
     key: "employees",
     label: "Employee Records",
@@ -74,13 +93,62 @@ const tabs = [
   },
 ];
 
-const HrPage = () => {
-  const [activeTab, setActiveTab] = useState("employees");
-  const tabKeys = tabs.map((tab) => tab.key);
-  const ActiveComponent = tabs.find((tab) => tab.key === activeTab)?.Component;
+// Tab button component
+const TabButton = ({ isActive, onClick, Icon, label }) => (
+  <motion.button
+    role="tab"
+    aria-selected={isActive}
+    aria-current={isActive ? "page" : undefined}
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.97 }}
+    onClick={onClick}
+    className={`relative flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 shadow-sm whitespace-nowrap focus:outline-none ${
+      isActive
+        ? "text-white border-transparent"
+        : "bg-gray-50 text-gray-800 hover:bg-purple-50 border-gray-200 dark:bg-neutral-800 dark:text-gray-100 dark:hover:bg-neutral-700 dark:border-neutral-700"
+    }`}
+  >
+    {isActive && (
+      <motion.div
+        layoutId="activeTabHighlight"
+        className="absolute inset-0 z-0 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600"
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      />
+    )}
+    <motion.div
+      className="relative z-10 flex items-center gap-2"
+      initial={false}
+      animate={isActive ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+      transition={{ duration: 0.4 }}
+    >
+      <Tippy content={label}>
+        <span>
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+        </span>
+      </Tippy>
+      <span className="hidden md:inline">{label}</span>
+    </motion.div>
+  </motion.button>
+);
 
+const HrPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const tabListRef = useRef(null);
   const swipeRef = useRef({ xStart: null, xEnd: null });
+
+  const tabKeys = hrTabs.map((tab) => tab.key);
+  const initialTab = searchParams.get("tab") || "employees";
+  const [activeTab, setActiveTab] = useState(
+    tabKeys.includes(initialTab) ? initialTab : "employees"
+  );
+
+  useEffect(() => {
+    setSearchParams({ tab: activeTab }, { replace: true });
+  }, [activeTab, setSearchParams]);
+
+  const ActiveComponent = useMemo(() => {
+    return hrTabs.find((tab) => tab.key === activeTab)?.Component;
+  }, [activeTab]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -104,7 +172,7 @@ const HrPage = () => {
     return () => el.removeEventListener("keydown", handleKeyDown);
   }, [activeTab]);
 
-  // Swipe support for mobile
+  // Swipe support
   useEffect(() => {
     const container = tabListRef.current;
     if (!container) return;
@@ -139,68 +207,38 @@ const HrPage = () => {
   return (
     <Layout>
       <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-8 bg-white dark:bg-neutral-900 shadow-xl rounded-2xl min-h-screen transition-colors">
-        {/* Header */}
         <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-100 pb-4 flex items-center gap-2 flex-wrap">
           <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" />
           HR Management Dashboard
         </h1>
-        <hr className="mb-6 h-1 rounded bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500 border-0" />
+        <hr className="mb-4 h-1 rounded bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500 border-0" />
+        <div className="text-xs text-center text-gray-400 dark:text-gray-500 pb-3">
+        </div>
 
-        {/* Tabs */}
         <div
           ref={tabListRef}
           tabIndex={0}
           role="tablist"
           className="outline-none grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6"
         >
-          {tabs.map(({ key, label, icon: Icon }) => {
-            const isActive = activeTab === key;
-            return (
-              <motion.button
-                key={key}
-                role="tab"
-                aria-selected={isActive}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                onClick={() => setActiveTab(key)}
-                className={`relative flex items-center justify-center gap-2 px-4 sm:px-5 py-2 text-xs sm:text-sm font-medium rounded-full border cursor-pointer transition-all duration-200 shadow-sm focus:outline-none whitespace-nowrap ${
-                  isActive
-                    ? "text-white border-transparent"
-                    : "bg-gray-50 text-gray-800 hover:bg-purple-50 border-gray-200 dark:bg-neutral-800 dark:text-gray-100 dark:hover:bg-neutral-700 dark:border-neutral-700"
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTabHighlight"
-                    className="absolute inset-0 z-0 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-                <motion.div
-                  className="relative z-10 flex items-center gap-2"
-                  initial={false}
-                  animate={isActive ? { scale: [1, 1.15, 1] } : { scale: 1 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="hidden md:inline">{label}</span>
-                </motion.div>
-              </motion.button>
-            );
-          })}
+          {hrTabs.map(({ key, label, icon: Icon }) => (
+            <TabButton
+              key={key}
+              isActive={activeTab === key}
+              onClick={() => setActiveTab(key)}
+              Icon={Icon}
+              label={label}
+            />
+          ))}
         </div>
 
-        {/* Tab Content */}
         <div
           role="tabpanel"
           className="bg-gray-50 dark:bg-neutral-800 p-3 sm:p-4 rounded-xl shadow-inner min-h-[300px] text-gray-800 dark:text-gray-100 transition-all text-sm sm:text-base overflow-x-auto"
         >
-          {ActiveComponent ? (
-            <ActiveComponent />
-          ) : (
-            <p className="text-gray-500 dark:text-gray-400">No tab selected</p>
-          )}
+          <Suspense fallback={<p className="text-gray-400">Loading...</p>}>
+            {ActiveComponent ? <ActiveComponent /> : <p>No tab selected</p>}
+          </Suspense>
         </div>
       </div>
     </Layout>

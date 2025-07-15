@@ -9,43 +9,86 @@ import { isValidObjectId } from "mongoose";
  * Create a new HR record for an employee
  */
 const createHRRecord = asyncHandler(async (req, res) => {
-  const { employee, noticePeriod, onboardingStatus, resignationStatus, isSuperAdmin } = req.body;
+  const {
+    employee, // Can be ID or name
+    noticePeriod,
+    onboardingStatus,
+    resignationStatus,
+    isSuperAdmin,
+  } = req.body;
 
-  // 1. Validate employee ID
-  if (!employee || !isValidObjectId(employee)) {
-    throw new ApiError(400, "A valid employee ID is required.");
+  let user;
+
+  // 1. Validate and resolve employee
+  if (!employee) {
+    throw new ApiError(400, "Employee identifier (ID or name) is required.");
   }
 
-  // 2. Check if user exists
-  const user = await User.findById(employee);
+  if (isValidObjectId(employee)) {
+    user = await User.findById(employee);
+  } else {
+    user = await User.findOne({ username: { $regex: new RegExp(`^${employee}$`, "i") } });
+  }
+
   if (!user) {
     throw new ApiError(404, "Employee not found.");
   }
-
-  // 3. Prevent duplicate HR record
-  const existingHR = await HR.findOne({ employee });
+  const userId = user?._id;
+  // 2. Prevent duplicate HR record
+  const existingHR = await HR.findOne({ employee: userId });
   if (existingHR) {
     throw new ApiError(409, "HR record already exists for this employee.");
   }
 
-  // 4. Create HR record
+  // 3. Create HR record
   const newHR = await HR.create({
-    employee,
+    employee: userId,
     noticePeriod: noticePeriod?.trim() || null,
     onboardingStatus: onboardingStatus || "not-started",
     resignationStatus: resignationStatus || "none",
     isSuperAdmin: !!isSuperAdmin,
   });
 
-  return res.status(201).json(
-    new ApiResponse(201, newHR, "HR record created successfully.")
-  );
+  return res
+    .status(201)
+    .json(new ApiResponse(201, newHR, "HR record created successfully."));
 });
+
 /**
  * Update an existing HR record
  */
 const updateHRRecord = asyncHandler(async (req, res) => {
-  // TODO: Implement
+  const { id } = req.params;
+
+  // 1. Validate HR record ID
+  if (!id || !isValidObjectId(id)) {
+    throw new ApiError(400, "Invalid HR record ID.");
+  }
+  // 2. Find the HR record
+  const existingRecord = await HR.findById(id);
+  if (!existingRecord) {
+    throw new ApiError(404, "HR record not found.");
+  }
+  // 3. Allowed fields to update
+  const {
+    noticePeriod,
+    onboardingStatus,
+    resignationStatus,
+    position,
+    isSuperAdmin,
+  } = req.body;
+  // 4. Update only if field is provided
+  if (noticePeriod !== undefined) existingRecord.noticePeriod = noticePeriod.trim();
+  if (onboardingStatus !== undefined) existingRecord.onboardingStatus = onboardingStatus;
+  if (resignationStatus !== undefined) existingRecord.resignationStatus = resignationStatus;
+  if (position !== undefined) existingRecord.position = position.trim();
+  if (isSuperAdmin !== undefined) existingRecord.isSuperAdmin = isSuperAdmin;
+  // 5. Save the updated record
+  await existingRecord.save();
+  
+  return res.status(200).json(
+    new ApiResponse(200, existingRecord, "HR record updated successfully.")
+  );
 });
 
 /**
@@ -73,14 +116,164 @@ const getHRByEmployeeId = asyncHandler(async (req, res) => {
  * Get all HR records (optionally filtered)
  */
 const getAllHRRecords = asyncHandler(async (req, res) => {
-  // TODO: Implement
+  let {
+    page = 1,
+    limit = 20,
+    deleted,
+    resigned,
+    onboardingStatus,
+    search,
+  } = req.query;
+
+  page = parseInt(page);
+  limit = parseInt(limit);
+
+  if (isNaN(page) || page < 1) page = 1;
+  if (isNaN(limit) || limit < 1 || limit > 100) limit = 20;
+
+  const query = {};
+
+  // Filter: Deleted status
+  if (deleted === "true") query.deleted = true;
+  else if (deleted === "false") query.deleted = false;
+
+  // Filter: Resignation status
+  if (resigned === "true") query.resignationStatus = "resigned";
+  else if (resigned === "false") query.resignationStatus = { $ne: "resigned" };
+
+  // Filter: Onboarding status
+  if (onboardingStatus) {
+    const allowedStatuses = ["not-started", "in-progress", "completed"];
+    if (!allowedStatuses.includes(onboardingStatus)) {
+      throw new ApiError(400, "Invalid onboardingStatus filter.");
+    }
+    query.onboardingStatus = onboardingStatus;
+  }
+
+  // Search: by name, email, username (in User collection)
+  if (search?.trim()) {
+    const regex = new RegExp(search.trim(), "i");
+    const matchedUsers = await User.find({
+      $or: [{ name: regex }, { email: regex }, { username: regex }],
+    }).select("_id");
+
+    if (matchedUsers.length === 0) {
+      return res.status(200).json(
+        new ApiResponse(200, {
+          total: 0,
+          page,
+          limit,
+          records: [],
+        }, "No matching HR records found.")
+      );
+    }
+
+    const matchedUserIds = matchedUsers.map((user) => user._id);
+    query.employee = { $in: matchedUserIds };
+  }
+
+  // Count total documents matching query
+  const total = await HR.countDocuments(query);
+
+  // Retrieve paginated data
+  const records = await HR.find(query)
+    .populate("employee", "name email username") // project specific fields only
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      hasNextPage: page * limit < total,
+      hasPrevPage: page > 1,
+      records,
+    }, "HR records fetched successfully.")
+  );
 });
 
 /**
  * Search HR records by query (name, email, etc.)
  */
 const searchHRRecords = asyncHandler(async (req, res) => {
-  // TODO: Implement
+  const {
+    q = "",
+    deleted,
+    onboardingStatus,
+    resignationStatus,
+    page = 1,
+    limit = 10,
+  } = req.query;
+
+  const trimmedQuery = q.trim();
+  const currentPage = Math.max(parseInt(page), 1);
+  const resultLimit = Math.min(Math.max(parseInt(limit), 1), 100);
+  const skip = (currentPage - 1) * resultLimit;
+
+  // Optional regex search
+  const matchConditions = [];
+
+  if (trimmedQuery) {
+    const regex = new RegExp(trimmedQuery, "i");
+    matchConditions.push({
+      $or: [
+        { "employee.name": regex },
+        { "employee.email": regex },
+        { "employee.username": regex },
+      ],
+    });
+  }
+
+  if (deleted === "true") matchConditions.push({ isDeleted: true });
+  else if (deleted === "false") matchConditions.push({ isDeleted: false });
+
+  if (onboardingStatus) matchConditions.push({ onboardingStatus });
+  if (resignationStatus) matchConditions.push({ resignationStatus });
+
+  const pipeline = [
+    {
+      $lookup: {
+        from: "users",
+        localField: "employee",
+        foreignField: "_id",
+        as: "employee",
+      },
+    },
+    { $unwind: "$employee" },
+    ...(matchConditions.length > 0 ? [{ $match: { $and: matchConditions } }] : []),
+    {
+      $project: {
+        _id: 1,
+        noticePeriod: 1,
+        onboardingStatus: 1,
+        resignationStatus: 1,
+        isSuperAdmin: 1,
+        isDeleted: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        employee: {
+          _id: 1,
+          name: 1,
+          email: 1,
+          username: 1,
+          department: 1,
+          avatarUrl: 1,
+        },
+      },
+    },
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: resultLimit },
+  ];
+
+  const results = await HR.aggregate(pipeline);
+
+  return res.status(200).json(
+    new ApiResponse(200, results, "Search successful.")
+  );
 });
 
 /**

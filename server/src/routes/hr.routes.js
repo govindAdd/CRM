@@ -42,15 +42,15 @@ const router = express.Router();
 router.post(
   "/",
   verifyJWT,
-  roleBasedAccess("admin", "superadmin"),
+  roleBasedAccess("admin", "superadmin", "hr", "manager"),
   createHRRecord
-);
+); // done
 router.put(
   "/:id",
   verifyJWT,
-  roleBasedAccess("admin", "superadmin"),
+  roleBasedAccess("admin", "superadmin", "hr", "manager"),
   updateHRRecord
-);
+); // done
 router.delete(
   "/:id",
   verifyJWT,
@@ -64,8 +64,18 @@ router.patch(
   restoreHRRecord
 );
 router.get("/employee/:employeeId", verifyJWT, getHRByEmployeeId);
-router.get("/", verifyJWT, getAllHRRecords);
-router.get("/search", verifyJWT, searchHRRecords);
+router.get(
+  "/",
+  verifyJWT,
+  roleBasedAccess("admin", "superadmin", "hr", "manager"),
+  getAllHRRecords
+);
+router.get(
+  "/search",
+  verifyJWT,
+  roleBasedAccess("admin", "superadmin", "hr", "manager"),
+  searchHRRecords
+); //done
 router.patch(
   "/bulk",
   verifyJWT,
