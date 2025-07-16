@@ -24,111 +24,63 @@ import {
 } from "lucide-react";
 
 // Lazy load tab components
-const EmployeeRecords = lazy(() =>
-  import("../components/hrTabs/EmployeeRecords")
-);
+const EmployeeRecords = lazy(() => import("../components/hrTabs/EmployeeRecords"));
 const LeaveRequests = lazy(() => import("../components/hrTabs/LeaveRequests"));
-const PendingApprovals = lazy(() =>
-  import("../components/hrTabs/PendingApprovals")
-);
-const OnboardingEmployees = lazy(() =>
-  import("../components/hrTabs/OnboardingEmployees")
-);
+const PendingApprovals = lazy(() => import("../components/hrTabs/PendingApprovals"));
+const OnboardingEmployees = lazy(() => import("../components/hrTabs/OnboardingEmployees"));
 const Resignations = lazy(() => import("../components/hrTabs/Resignations"));
 const NoticePeriod = lazy(() => import("../components/hrTabs/NoticePeriod"));
-const ActiveEmployees = lazy(() =>
-  import("../components/hrTabs/ActiveEmployees")
-);
+const ActiveEmployees = lazy(() => import("../components/hrTabs/ActiveEmployees"));
 const SuperAdmins = lazy(() => import("../components/hrTabs/SuperAdmins"));
 
 // Tab config
 const hrTabs = [
-  {
-    key: "employees",
-    label: "Employee Records",
-    icon: Users,
-    Component: EmployeeRecords,
-  },
-  {
-    key: "leaves",
-    label: "Leave Requests",
-    icon: CalendarCheck,
-    Component: LeaveRequests,
-  },
-  {
-    key: "approvals",
-    label: "Pending Approvals",
-    icon: ClipboardCheck,
-    Component: PendingApprovals,
-  },
-  {
-    key: "onboarding",
-    label: "Onboarding",
-    icon: UserPlus,
-    Component: OnboardingEmployees,
-  },
-  {
-    key: "resignations",
-    label: "Resignations",
-    icon: LogOut,
-    Component: Resignations,
-  },
-  {
-    key: "notice",
-    label: "Notice Period",
-    icon: Hourglass,
-    Component: NoticePeriod,
-  },
-  {
-    key: "active",
-    label: "Active Employees",
-    icon: UserCheck,
-    Component: ActiveEmployees,
-  },
-  {
-    key: "superadmins",
-    label: "Superadmins",
-    icon: ShieldCheck,
-    Component: SuperAdmins,
-  },
+  { key: "employees", label: "Employee Records", icon: Users, Component: EmployeeRecords },
+  { key: "leaves", label: "Leave Requests", icon: CalendarCheck, Component: LeaveRequests },
+  { key: "approvals", label: "Pending Approvals", icon: ClipboardCheck, Component: PendingApprovals },
+  { key: "onboarding", label: "Onboarding", icon: UserPlus, Component: OnboardingEmployees },
+  { key: "resignations", label: "Resignations", icon: LogOut, Component: Resignations },
+  { key: "notice", label: "Notice Period", icon: Hourglass, Component: NoticePeriod },
+  { key: "active", label: "Active Employees", icon: UserCheck, Component: ActiveEmployees },
+  { key: "superadmins", label: "Superadmins", icon: ShieldCheck, Component: SuperAdmins },
 ];
 
-// Tab button component
+// ✅ FIXED: Wrap the entire button with Tippy
 const TabButton = ({ isActive, onClick, Icon, label }) => (
-  <motion.button
-    role="tab"
-    aria-selected={isActive}
-    aria-current={isActive ? "page" : undefined}
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.97 }}
-    onClick={onClick}
-    className={`relative flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 shadow-sm whitespace-nowrap focus:outline-none ${
-      isActive
-        ? "text-white border-transparent"
-        : "bg-gray-50 text-gray-800 hover:bg-purple-50 border-gray-200 dark:bg-neutral-800 dark:text-gray-100 dark:hover:bg-neutral-700 dark:border-neutral-700"
-    }`}
-  >
-    {isActive && (
-      <motion.div
-        layoutId="activeTabHighlight"
-        className="absolute inset-0 z-0 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600"
-        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-      />
-    )}
-    <motion.div
-      className="relative z-10 flex items-center gap-2"
-      initial={false}
-      animate={isActive ? { scale: [1, 1.15, 1] } : { scale: 1 }}
-      transition={{ duration: 0.4 }}
+  <Tippy content={label}>
+    <motion.button
+      role="tab"
+      aria-selected={isActive}
+      aria-current={isActive ? "page" : undefined}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className={`relative flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 shadow-sm whitespace-nowrap focus:outline-none ${
+        isActive
+          ? "text-white border-transparent"
+          : "bg-gray-50 text-gray-800 hover:bg-purple-50 border-gray-200 dark:bg-neutral-800 dark:text-gray-100 dark:hover:bg-neutral-700 dark:border-neutral-700"
+      }`}
     >
-      <Tippy content={label}>
-        <span>
+      {isActive && (
+        <motion.div
+          layoutId="activeTabHighlight"
+          className="absolute inset-0 z-0 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600"
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        />
+      )}
+      <motion.div
+        className="relative z-10 flex items-center gap-2"
+        initial={false}
+        animate={isActive ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+        transition={{ duration: 0.4 }}
+      >
+        <span className="flex items-center">
           <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </span>
-      </Tippy>
-      <span className="hidden md:inline">{label}</span>
-    </motion.div>
-  </motion.button>
+        <span className="hidden md:inline">{label}</span>
+      </motion.div>
+    </motion.button>
+  </Tippy>
 );
 
 const HrPage = () => {
@@ -212,8 +164,6 @@ const HrPage = () => {
           HR Management Dashboard
         </h1>
         <hr className="mb-4 h-1 rounded bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500 border-0" />
-        <div className="text-xs text-center text-gray-400 dark:text-gray-500 pb-3">
-        </div>
 
         <div
           ref={tabListRef}

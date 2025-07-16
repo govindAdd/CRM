@@ -54,13 +54,13 @@ router.put(
 router.delete(
   "/:id",
   verifyJWT,
-  roleBasedAccess("admin", "superadmin"),
+  roleBasedAccess("admin", "superadmin", "hr", "manager"),
   deleteHRRecord
 );
 router.patch(
   "/:id/restore",
   verifyJWT,
-  roleBasedAccess("admin", "superadmin"),
+  roleBasedAccess("admin", "superadmin", "hr", "manager"),
   restoreHRRecord
 );
 router.get("/employee/:employeeId", verifyJWT, getHRByEmployeeId);
@@ -85,7 +85,7 @@ router.patch(
 router.get(
   "/export",
   verifyJWT,
-  roleBasedAccess("admin", "superadmin"),
+  roleBasedAccess("admin", "superadmin", "hr", "manager"),
   exportHRData
 );
 

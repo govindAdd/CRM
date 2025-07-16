@@ -47,10 +47,17 @@ export const restoreHRRecord = createAsyncThunk(
       const res = await api.patch(`/hr/${id}/restore`);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data);
+      const fallbackMessage = "Failed to restore HR record.";
+      const errorData = err.response?.data;
+
+      return rejectWithValue({
+        message: errorData?.message || fallbackMessage,
+        status: err.response?.status || 500,
+      });
     }
   }
 );
+
 
 export const getAllHRRecords = createAsyncThunk(
   "hr/getAll",
@@ -88,7 +95,6 @@ export const bulkUpdateHRRecords = createAsyncThunk(
   }
 );
 
-// ✅ Search Thunk
 export const searchHRRecords = createAsyncThunk(
   "hr/search",
   async (query, { rejectWithValue }) => {
@@ -105,9 +111,11 @@ export const searchHRRecords = createAsyncThunk(
 
 export const exportHRData = createAsyncThunk(
   "hr/export",
-  async (_, { rejectWithValue }) => {
+  async (format = "excel", { rejectWithValue }) => {
     try {
-      const res = await api.get("/hr/export", { responseType: "blob" });
+      const res = await api.get(`/hr/export?format=${format}`, {
+        responseType: "blob",
+      });
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data);
@@ -259,7 +267,7 @@ const hrSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(getAllHRRecords.fulfilled, (state, action) => {
-        state.hrRecords = action.payload;
+        state.hrRecords = action.payload.records || action.payload;
       })
       .addCase(updateHRRecord.fulfilled, (state, action) => {
         const index = state.hrRecords.findIndex(
@@ -267,6 +275,20 @@ const hrSlice = createSlice({
         );
         if (index !== -1) {
           state.hrRecords[index] = action.payload;
+        }
+      })
+      .addCase(deleteHRRecord.fulfilled, (state, action) => {
+        const id = action.payload._id;
+        const index = state.hrRecords.findIndex((r) => r._id === id);
+        if (index !== -1) {
+          state.hrRecords[index].isDeleted = true;
+        }
+      })
+      .addCase(restoreHRRecord.fulfilled, (state, action) => {
+        const id = action.payload._id;
+        const index = state.hrRecords.findIndex((r) => r._id === id);
+        if (index !== -1) {
+          state.hrRecords[index].isDeleted = false;
         }
       })
       .addCase(searchHRRecords.pending, (state) => {

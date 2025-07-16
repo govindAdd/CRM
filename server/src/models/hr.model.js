@@ -89,11 +89,14 @@ hrSchema.query.withLeaveType = function (type) {
 
 // ===================== Pre-find Hook (soft delete filter) =====================
 hrSchema.pre(/^find/, function (next) {
-  if (!this.getFilter().hasOwnProperty("isDeleted")) {
+  const filter = this.getFilter();
+  if (!Object.prototype.hasOwnProperty.call(filter, "isDeleted")) {
     this.where({ isDeleted: false });
   }
+
   next();
 });
+
 
 // ===================== Statics =====================
 hrSchema.statics.getLeaveCountsPerEmployee = async function () {

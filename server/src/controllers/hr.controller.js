@@ -4,6 +4,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { isValidObjectId } from "mongoose";
+import mongoose from "mongoose";
+import * as XLSX from 'xlsx';
 
 /**
  * Create a new HR record for an employee
@@ -27,7 +29,9 @@ const createHRRecord = asyncHandler(async (req, res) => {
   if (isValidObjectId(employee)) {
     user = await User.findById(employee);
   } else {
-    user = await User.findOne({ username: { $regex: new RegExp(`^${employee}$`, "i") } });
+    user = await User.findOne({
+      username: { $regex: new RegExp(`^${employee}$`, "i") },
+    });
   }
 
   if (!user) {
@@ -78,31 +82,92 @@ const updateHRRecord = asyncHandler(async (req, res) => {
     isSuperAdmin,
   } = req.body;
   // 4. Update only if field is provided
-  if (noticePeriod !== undefined) existingRecord.noticePeriod = noticePeriod.trim();
-  if (onboardingStatus !== undefined) existingRecord.onboardingStatus = onboardingStatus;
-  if (resignationStatus !== undefined) existingRecord.resignationStatus = resignationStatus;
+  if (noticePeriod !== undefined)
+    existingRecord.noticePeriod = noticePeriod.trim();
+  if (onboardingStatus !== undefined)
+    existingRecord.onboardingStatus = onboardingStatus;
+  if (resignationStatus !== undefined)
+    existingRecord.resignationStatus = resignationStatus;
   if (position !== undefined) existingRecord.position = position.trim();
   if (isSuperAdmin !== undefined) existingRecord.isSuperAdmin = isSuperAdmin;
   // 5. Save the updated record
   await existingRecord.save();
-  
-  return res.status(200).json(
-    new ApiResponse(200, existingRecord, "HR record updated successfully.")
-  );
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, existingRecord, "HR record updated successfully.")
+    );
 });
 
 /**
  * Soft delete an HR record
  */
 const deleteHRRecord = asyncHandler(async (req, res) => {
-  // TODO: Implement
+  const { id } = req.params;
+
+  // 1. Validate ObjectId
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(400, "Invalid HR record ID.");
+  }
+
+  // 2. Find the active HR record (isDeleted: false is implied by pre-hook)
+  const hrRecord = await HR.findById(id);
+
+  if (!hrRecord) {
+    throw new ApiError(404, "HR record not found.");
+  }
+
+  // 3. Check if already deleted
+  if (hrRecord.isDeleted) {
+    throw new ApiError(400, "HR record is already deleted.");
+  }
+
+  // 4. Perform soft delete
+  hrRecord.isDeleted = true;
+  await hrRecord.save();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        hrRecord,
+        "HR record soft deleted successfully."
+      )
+    );
 });
 
 /**
  * Restore a soft-deleted HR record
  */
 const restoreHRRecord = asyncHandler(async (req, res) => {
-  // TODO: Implement
+  const { id } = req.params;
+
+  // Validate ObjectId
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(400, "Invalid HR record ID.");
+  }
+
+  // Include soft-deleted record by explicitly querying isDeleted: true
+  const hrRecord = await HR.findOne({ _id: id, isDeleted: true });
+
+  if (!hrRecord) {
+    throw new ApiError(404, "HR record not found.");
+  }
+
+  // Already active
+  if (!hrRecord.isDeleted) {
+    throw new ApiError(400, "HR record is already active.");
+  }
+
+  // Restore
+  hrRecord.isDeleted = false;
+  await hrRecord.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, hrRecord, "HR record restored successfully."));
 });
 
 /**
@@ -159,12 +224,16 @@ const getAllHRRecords = asyncHandler(async (req, res) => {
 
     if (matchedUsers.length === 0) {
       return res.status(200).json(
-        new ApiResponse(200, {
-          total: 0,
-          page,
-          limit,
-          records: [],
-        }, "No matching HR records found.")
+        new ApiResponse(
+          200,
+          {
+            total: 0,
+            page,
+            limit,
+            records: [],
+          },
+          "No matching HR records found."
+        )
       );
     }
 
@@ -183,15 +252,19 @@ const getAllHRRecords = asyncHandler(async (req, res) => {
     .limit(limit);
 
   return res.status(200).json(
-    new ApiResponse(200, {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-      hasNextPage: page * limit < total,
-      hasPrevPage: page > 1,
-      records,
-    }, "HR records fetched successfully.")
+    new ApiResponse(
+      200,
+      {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPrevPage: page > 1,
+        records,
+      },
+      "HR records fetched successfully."
+    )
   );
 });
 
@@ -243,7 +316,9 @@ const searchHRRecords = asyncHandler(async (req, res) => {
       },
     },
     { $unwind: "$employee" },
-    ...(matchConditions.length > 0 ? [{ $match: { $and: matchConditions } }] : []),
+    ...(matchConditions.length > 0
+      ? [{ $match: { $and: matchConditions } }]
+      : []),
     {
       $project: {
         _id: 1,
@@ -271,9 +346,9 @@ const searchHRRecords = asyncHandler(async (req, res) => {
 
   const results = await HR.aggregate(pipeline);
 
-  return res.status(200).json(
-    new ApiResponse(200, results, "Search successful.")
-  );
+  return res
+    .status(200)
+    .json(new ApiResponse(200, results, "Search successful."));
 });
 
 /**
@@ -284,10 +359,60 @@ const bulkUpdateHRRecords = asyncHandler(async (req, res) => {
 });
 
 /**
- * HR data (CSV, Excel, etc.)
+ * Export HR data (CSV or Excel)
  */
 const exportHRData = asyncHandler(async (req, res) => {
-  // TODO: Implement
+  const format = req.query.format || "excel";
+
+  const hrRecords = await HR.find()
+    .populate("employee", "name email username department")
+    .lean();
+
+  if (!hrRecords || hrRecords.length === 0) {
+    throw new ApiError(404, "No HR records found to export.");
+  }
+
+  const exportData = hrRecords.map((record) => ({
+    Name: record?.employee?.name || "",
+    Username: record?.employee?.username || "",
+    Email: record?.employee?.email || "",
+    Department: record?.employee?.department || "",
+    NoticePeriod: record.noticePeriod || "",
+    OnboardingStatus: record.onboardingStatus || "",
+    ResignationStatus: record.resignationStatus || "",
+    IsSuperAdmin: record.isSuperAdmin ? "Yes" : "No",
+    IsDeleted: record.isDeleted ? "Yes" : "No",
+    CreatedAt: new Date(record.createdAt).toLocaleString(),
+    UpdatedAt: new Date(record.updatedAt).toLocaleString(),
+  }));
+
+  // Excel
+if (format === "excel") {
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  XLSX.utils.book_append_sheet(workbook, worksheet, "HR Records");
+
+  const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+  res.setHeader("Content-Disposition", "attachment; filename=hr_records.xlsx");
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+  return res.status(200).send(buffer);
+}
+
+  // CSV
+  if (format === "csv") {
+    const { Parser } = await import("json2csv");
+    const parser = new Parser();
+    const csv = parser.parse(exportData);
+
+    res.setHeader("Content-Disposition", "attachment; filename=hr_records.csv");
+    res.setHeader("Content-Type", "text/csv");
+
+    return res.status(200).send(csv);
+  }
+
+  throw new ApiError(400, "Invalid export format. Use 'csv' or 'excel'.");
 });
 
 // ===================== Leave Requests =====================
@@ -473,5 +598,5 @@ export {
   getResignedEmployees,
   getActiveNoticePeriods,
   getSuperAdmins,
-  getActiveEmployees
+  getActiveEmployees,
 };
