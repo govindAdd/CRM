@@ -43,14 +43,15 @@ const EmployeeRecords = () => {
     onboardingStatus: searchParams.get("onboardingStatus") || "",
     resignationStatus: searchParams.get("resignationStatus") || "",
   });
-  
+
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
   const PAGE_SIZE = 10;
-  
+
   const { handleUpdateHRRecord, loading: updateLoading } = useUpdateHRRecord();
   const { handleCreateHRRecord, loading: createLoading } = useCreateHRRecord();
   const { handleDeleteHRRecord, loading: deleteLoading } = useDeleteHRRecord();
-  const { handleRestoreHRRecord, loading: restoreLoading } = useRestoreHRRecord();
+  const { handleRestoreHRRecord, loading: restoreLoading } =
+    useRestoreHRRecord();
   const { handleExportHRData, loading: exportLoading } = useExportHRData();
 
   const {
@@ -117,10 +118,10 @@ const EmployeeRecords = () => {
   };
 
   const handleRestore = async (id) => {
-      if (!window.confirm("Are you sure you want to restore this record?")) return;
-      await handleRestoreHRRecord(id);
-      handleSearch();
-    
+    if (!window.confirm("Are you sure you want to restore this record?"))
+      return;
+    await handleRestoreHRRecord(id);
+    handleSearch();
   };
 
   const handleExport = async () => {
@@ -149,8 +150,9 @@ const EmployeeRecords = () => {
   }, [isModalOpen]);
 
   return (
-    <div className="p-4 space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-3">
+    <div className="p-6 sm:p-8 space-y-8 font-inter text-gray-900 dark:text-gray-100 bg-white dark:bg-[#0f0f0f] rounded-2xl shadow-xl transition-all duration-300">
+      {/* Header Actions */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <RecordFilters
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
@@ -167,40 +169,54 @@ const EmployeeRecords = () => {
         />
       </div>
 
-      <EmployeeRecordTable
-        loading={loading}
-        records={records}
-        selected={selected}
-        toggleSelect={toggleSelect}
-        handleModalOpen={handleModalOpen}
-        updateLoading={updateLoading}
-        handleDelete={handleDelete}
-        handleRestore={handleRestore}
-        deleteLoading={deleteLoading}
-        restoreLoading={restoreLoading}
-      />
-
-      <Pagination
-        page={page}
-        setPage={setPage}
-        searchParams={searchParams}
-        setSearchParams={setSearchParams}
-        handleSearch={handleSearch}
-        hasNextPage={records.length === PAGE_SIZE}
-      />
-
-      {isModalOpen && (
-        <EmployeeRecordModal
-          modalRef={modalRef}
-          editingId={editingId}
-          setIsModalOpen={setIsModalOpen}
-          formValues={formValues}
-          setFormValues={setFormValues}
-          handleSubmit={handleSubmit}
-          createLoading={createLoading}
+      {/* Data Table or Record Grid */}
+      <div className="rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-md transition">
+        <EmployeeRecordTable
+          loading={loading}
+          records={records}
+          selected={selected}
+          toggleSelect={toggleSelect}
+          handleModalOpen={handleModalOpen}
           updateLoading={updateLoading}
+          handleDelete={handleDelete}
+          handleRestore={handleRestore}
+          deleteLoading={deleteLoading}
+          restoreLoading={restoreLoading}
+        />
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex justify-end pt-4">
+        <Pagination
+          page={page}
+          setPage={setPage}
+          searchParams={searchParams}
+          setSearchParams={setSearchParams}
+          handleSearch={handleSearch}
+          hasNextPage={records.length === PAGE_SIZE}
           Button={Button}
         />
+      </div>
+
+      {/* Modal with Backdrop */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            ref={modalRef}
+            className="w-full max-w-xl rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 shadow-2xl transition-all p-6"
+          >
+            <EmployeeRecordModal
+              editingId={editingId}
+              setIsModalOpen={setIsModalOpen}
+              formValues={formValues}
+              setFormValues={setFormValues}
+              handleSubmit={handleSubmit}
+              createLoading={createLoading}
+              updateLoading={updateLoading}
+              Button={Button}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
