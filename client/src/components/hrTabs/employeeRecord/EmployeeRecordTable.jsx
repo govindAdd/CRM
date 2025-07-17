@@ -32,132 +32,111 @@ const EmployeeRecordTable = ({
   }
 
   return (
-    <div className="rounded-xl overflow-x-auto shadow-md border dark:border-neutral-700">
-      <table className="min-w-full table-auto text-sm text-gray-800 dark:text-gray-100">
-        <thead className="bg-gray-100 dark:bg-neutral-800 text-left uppercase text-xs font-semibold tracking-wide">
-          <tr>
-            <th className="px-5 py-3">#</th>
-            <th className="px-5 py-3">Name</th>
-            <th className="px-5 py-3">Department</th>
-            <th className="px-5 py-3">Status</th>
-            <th className="px-5 py-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {records.map((rec, index) => (
-            <tr
-              key={rec._id}
-              className="border-t border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800 transition"
-            >
-              <td className="px-5 py-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(rec._id)}
-                    onChange={() => toggleSelect(rec._id)}
-                    className="hidden peer"
-                  />
-                  <span className="w-5 h-5 border rounded peer-checked:bg-blue-300 peer-checked:border-blue-300 flex items-center justify-center text-xs text-gray-800 dark:text-gray-100">
-                    {index + 1}
-                  </span>
-                </label>
-              </td>
-              <td className="px-5 py-4">
-                <Tippy
-                  content={
-                    rec?.employee?.email || rec?.employee?.username || "Unknown"
-                  }
+    <div className="grid gap-4">
+      {records.map((rec, index) => (
+        <div
+          key={rec._id}
+          className="relative border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-lg px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:shadow-md transition"
+        >
+          {/* Top-right Status on small screen */}
+          <div className="absolute top-2 right-3 text-xs font-medium sm:hidden">
+            {rec.isDeleted ? (
+              <span className="text-red-600 dark:text-red-400">Deleted</span>
+            ) : (
+              <span className="text-green-600 dark:text-green-400">Active</span>
+            )}
+          </div>
+
+          {/* Avatar + Name */}
+          <div className="flex flex-row items-center gap-2 flex-1 min-w-0">
+            <label className="flex items-center gap-2 cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={selected.includes(rec._id)}
+                onChange={() => toggleSelect(rec._id)}
+                className="hidden peer"
+              />
+              <span className="w-5 h-5 border rounded peer-checked:bg-blue-500 peer-checked:border-blue-500 flex items-center justify-center text-xs text-gray-700 dark:text-white">
+                {index + 1}
+              </span>
+            </label>
+
+            {rec?.employee?.avatar ? (
+              <img
+                src={rec.employee.avatar}
+                alt={rec.employee.username}
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-500 shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold text-xs uppercase shrink-0">
+                {rec?.employee?.username?.charAt(0) || "?"}
+              </div>
+            )}
+
+            <div className="truncate">
+              <Tippy
+                content={
+                  rec?.employee?.email || rec?.employee?.username || "Unknown"
+                }
+              >
+                <span
+                  className="font-medium text-xs text-gray-900 dark:text-white block truncate cursor-pointer max-w-[50vw] sm:max-w-[180px]"
+                  onDoubleClick={() => {
+                    const email =
+                      rec?.employee?.email || rec?.employee?.username;
+                    if (email) navigator.clipboard.writeText(email);
+                  }}
                 >
-                  <div className="flex items-center gap-3">
-                    {rec?.employee?.avatar ? (
-                      <img
-                        src={rec.employee.avatar}
-                        alt={rec.employee.username}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-neutral-600 flex items-center justify-center text-xs font-semibold text-white uppercase">
-                        {rec?.employee?.username?.charAt(0) || "?"}
-                      </div>
-                    )}
-                    <span
-                      className="line-clamp-1 cursor-pointer"
-                      onDoubleClick={(e) => {
-                        const email =
-                          rec?.employee?.email || rec?.employee?.username;
-                        if (email) {
-                          navigator.clipboard.writeText(email);
-                        }
-                      }}
-                      onTouchEnd={(e) => {
-                        const now = Date.now();
-                        const lastTap = e.target.dataset.lastTap || 0;
+                  {rec?.employee?.username || rec?.employee?.email || "N/A"}
+                </span>
+              </Tippy>
+            </div>
+          </div>
+          {/* Status on large screens */}
+          <div className="hidden sm:block text-xs font-medium text-center shrink-0 sm:w-20 text-nowrap">
+            {rec.isDeleted ? (
+              <span className="text-red-600 dark:text-red-400">Deleted</span>
+            ) : (
+              <span className="text-green-600 dark:text-green-400">Active</span>
+            )}
+          </div>
 
-                        if (now - lastTap < 400) {
-                          const email =
-                            rec?.employee?.email || rec?.employee?.username;
-                          if (email) {
-                            navigator.clipboard.writeText(email);
-                          }
-                        }
+          {/* Actions */}
+          <div className="flex items-center justify-between gap-1.5 sm:justify-end shrink-0 w-full sm:w-auto">
+            <Tippy content="Edit">
+              <button
+                onClick={() => handleModalOpen(rec)}
+                disabled={updateLoading}
+                className="p-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition disabled:opacity-50"
+              >
+                <Pencil size={14} />
+              </button>
+            </Tippy>
 
-                        e.target.dataset.lastTap = now;
-                      }}
-                    >
-                      {rec?.employee?.username || rec?.employee?.email || "N/A"}
-                    </span>
-                  </div>
-                </Tippy>
-              </td>
-
-              <td className="px-5 py-4">
-                {rec?.employee?.department || "N/A"}
-              </td>
-
-              <td className="px-5 py-4">
-                {rec.isDeleted ? (
-                  <span className="text-red-500 font-medium">Deleted</span>
-                ) : (
-                  <span className="text-green-600 font-medium">Active</span>
-                )}
-              </td>
-
-              <td className="px-5 py-4">
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={() => handleModalOpen(rec)}
-                    disabled={updateLoading}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition disabled:opacity-50"
-                  >
-                    <Pencil size={16} />
-                    Edit
-                  </button>
-
-                  {rec.isDeleted ? (
-                    <button
-                      onClick={() => handleRestore(rec._id)}
-                      disabled={restoreLoading}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white transition disabled:opacity-50"
-                    >
-                      <Undo2 size={16} />
-                      Restore
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleDelete(rec._id)}
-                      disabled={deleteLoading}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg bg-red-600 hover:bg-red-700 text-white transition disabled:opacity-50"
-                    >
-                      <Trash2 size={16} />
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            {rec.isDeleted ? (
+              <Tippy content="Restore">
+                <button
+                  onClick={() => handleRestore(rec._id)}
+                  disabled={restoreLoading}
+                  className="p-1.5 rounded-md bg-yellow-500 hover:bg-yellow-600 text-white transition disabled:opacity-50"
+                >
+                  <Undo2 size={14} />
+                </button>
+              </Tippy>
+            ) : (
+              <Tippy content="Delete">
+                <button
+                  onClick={() => handleDelete(rec._id)}
+                  disabled={deleteLoading}
+                  className="p-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white transition disabled:opacity-50"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </Tippy>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

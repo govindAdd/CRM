@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import PropTypes from "prop-types";
@@ -34,7 +34,7 @@ const EmployeeRecordModal = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -45,7 +45,7 @@ const EmployeeRecordModal = ({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="relative w-full max-w-xl rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-2xl p-6"
+            className="relative w-full max-w-xl xxs:max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-2xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
@@ -60,7 +60,10 @@ const EmployeeRecordModal = ({
             </button>
 
             {/* Title */}
-            <h2 id="modal-title" className="text-xl font-semibold mb-6 text-gray-800 dark:text-white">
+            <h2
+              id="modal-title"
+              className="text-lg sm:text-xl font-semibold mb-6 text-gray-800 dark:text-white"
+            >
               {isEdit ? "Edit Employee Record" : "Create Employee Record"}
             </h2>
 
@@ -77,7 +80,7 @@ const EmployeeRecordModal = ({
                   onChange={(e) =>
                     setFormValues({ ...formValues, employee: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-md bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-white border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-2 rounded-md bg-gray-100 dark:bg-neutral-800 text-sm sm:text-base text-gray-800 dark:text-white border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="e.g. John Doe or 123456"
                 />
               </div>
@@ -92,7 +95,7 @@ const EmployeeRecordModal = ({
                   onChange={(e) =>
                     setFormValues({ ...formValues, onboardingStatus: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-md bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-white border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-2 rounded-md bg-gray-100 dark:bg-neutral-800 text-sm sm:text-base text-gray-800 dark:text-white border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="">Select status</option>
                   <option value="not-started">Not Started</option>
@@ -111,7 +114,7 @@ const EmployeeRecordModal = ({
                   onChange={(e) =>
                     setFormValues({ ...formValues, resignationStatus: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-md bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-white border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-2 rounded-md bg-gray-100 dark:bg-neutral-800 text-sm sm:text-base text-gray-800 dark:text-white border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="">Select status</option>
                   <option value="none">None</option>
@@ -132,7 +135,7 @@ const EmployeeRecordModal = ({
                   onChange={(e) =>
                     setFormValues({ ...formValues, noticePeriod: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-md bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-white border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-2 rounded-md bg-gray-100 dark:bg-neutral-800 text-sm sm:text-base text-gray-800 dark:text-white border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="e.g. 2 months"
                 />
               </div>
