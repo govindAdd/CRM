@@ -11,7 +11,7 @@ const getStatusGradient = (status) => {
     case "present": return "from-lime-400 to-green-500";
     case "leave": return "from-rose-400 to-pink-600";
     case "weekoff": return "from-sky-400 to-indigo-600";
-    case "halfday": return "from-amber-400 to-yellow-600";
+    case "half-day": return "from-amber-400 to-yellow-600";
     case "absent": return "from-gray-400 to-gray-600";
     default: return "from-gray-400 to-gray-600";
   }
@@ -22,7 +22,7 @@ const getStatusColor = (status) => {
     case "present": return "bg-green-500";
     case "leave": return "bg-pink-500";
     case "weekoff": return "bg-blue-500";
-    case "halfday": return "bg-yellow-400";
+    case "half-day": return "bg-yellow-400";
     case "absent": return "bg-gray-400";
     default: return "bg-gray-300";
   }
@@ -33,7 +33,7 @@ const getStatusText = (status) => {
     case "present": return "Present";
     case "leave": return "Leave";
     case "weekoff": return "Week Off";
-    case "halfday": return "Half Day";
+    case "half-day": return "Half Day";
     case "absent": return "Absent";
     default: return "Unknown";
   }

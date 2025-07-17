@@ -17,7 +17,6 @@ const SIZES = {
   icon: "h-10 w-10 p-0 rounded-md",
 };
 
-// Main Component
 const Button = forwardRef(
   (
     {
@@ -33,31 +32,36 @@ const Button = forwardRef(
     },
     ref
   ) => {
-    if (variant === "fancy") {
+    // 🌈 Gradient Variant
+    if (variant === "gradient") {
       return (
         <button
           ref={ref}
           type={type}
           onClick={onClick}
           disabled={disabled}
-          className={`relative inline-block border-2 border-black bg-transparent px-8 py-4 text-left text-sm font-bold uppercase leading-tight tracking-wider text-black transition-all duration-300 hover:bg-black hover:text-white ${fullWidth ? "w-full" : ""} ${className}`}
+          className={`
+            relative inline-flex items-center justify-center overflow-hidden rounded-full 
+            px-8 py-3 font-semibold tracking-wide transition-all duration-700 ease-out
+            text-white bg-gradient-to-r from-purple-500 via-teal-400 to-yellow-300
+            hover:from-yellow-300 hover:via-purple-500 hover:to-teal-400
+            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500
+            disabled:opacity-50 disabled:pointer-events-none
+            ${fullWidth ? "w-full" : ""}
+            ${className}
+          `}
           {...props}
         >
           <span
-            className="absolute left-6 top-1/2 h-0.5 w-6 -translate-y-1/2 transform bg-black transition-all duration-300 group-hover:bg-white group-hover:w-4"
+            className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 via-teal-400 to-yellow-300 blur-xl opacity-30 hover:opacity-60 transition-opacity duration-700"
+            aria-hidden="true"
           ></span>
-
-          <span className="block pl-8 text-[1.125em] transition-all duration-300">
-            {children}
-          </span>
-
-          <span className="absolute left-2 top-[-2px] h-0.5 w-6 bg-gray-300 transition-all duration-300 group-hover:w-0"></span>
-          <span className="absolute bottom-[-2px] right-8 h-0.5 w-6 bg-gray-300 transition-all duration-300 group-hover:w-0"></span>
-          <span className="absolute bottom-[-2px] right-2 h-0.5 w-2 bg-gray-300 transition-all duration-300 group-hover:w-0"></span>
+          <span className="relative z-10">{children}</span>
         </button>
       );
     }
 
+    // 🧱 Default Tailwind Variants
     const variantClass = VARIANTS[variant] || VARIANTS.default;
     const sizeClass = SIZES[size] || SIZES.md;
 
@@ -99,7 +103,7 @@ Button.propTypes = {
     "outline",
     "ghost",
     "link",
-    "fancy",
+    "gradient", // 🌈 New variant
   ]),
   size: PropTypes.oneOf(["sm", "md", "lg", "icon"]),
   className: PropTypes.string,
