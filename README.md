@@ -10,8 +10,7 @@ A futuristic, full-stack CRM system designed for scalable team collaboration, fe
 - **Department Management:** Organize users into departments, assign roles, and manage department members.
 - **Attendance Tracking:** Record and view attendance for users and departments.
 - **Authentication & Security:**
-  - Secure login with JWT
-  - Google OAuth integration
+  - Secure login with JWT & Google OAuth
   - Password reset and change flows
   - Role-based access control (RBAC)
 - **Modern Dashboard:**
@@ -52,6 +51,7 @@ CRM/
 │   │   │   ├── department/
 │   │   │   ├── forms/
 │   │   │   ├── profile/
+│   │   │   ├── hrTabs/
 │   │   │   └── ui/
 │   │   ├── hooks/            # Custom React hooks
 │   │   ├── layouts/          # Layout wrappers
@@ -59,7 +59,7 @@ CRM/
 │   │   ├── services/         # API utilities
 │   │   ├── store/            # Redux slices & store
 │   │   ├── App.jsx, main.jsx # Entry points
-│   │   └── styles            # App & global styles
+│   │   └── utils/            # Helper functions
 │   ├── package.json
 │   └── ...
 ├── server/           # Node.js backend (Express, MongoDB)
@@ -95,9 +95,8 @@ cd CRM
 ### 2. Environment Variables
 Create `.env` files in both `client/` and `server/` directories. Example for `server/.env`:
 ```
-PORT=5000
+PORT=3000
 MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
 SESSION_SECRET=your_session_secret
 CORS_ORIGIN=http://localhost:5173
 CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -105,6 +104,8 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 EMAIL_USER=your_email
 EMAIL_PASS=your_email_password
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
 
 ### 3. Install Dependencies
@@ -130,7 +131,7 @@ cd ../server && npm install
 
 ---
 
-## 🌐 API Overview
+## 🌐 API Overview (Backend)
 
 - **Base URL:** `/api/v1/`
 - **Main Endpoints:**
@@ -154,27 +155,60 @@ cd ../server && npm install
 
 ---
 
-## 🖥️ Frontend Overview
+## 🗄️ Backend (Server) Details
 
-- **Dashboard:** Animated KPIs, revenue charts, search, notifications
-- **User Profiles:** View, edit, and manage users
-- **Departments:** Create, edit, assign members, view department employees
-- **Attendance:** Mark and view attendance records
-- **Authentication:** Login, signup, Google OAuth, password reset
-- **Responsive UI:** Tailwind CSS, dark mode, modern design
-- **Reusable Components:** Modular, maintainable codebase
+### Models
+- **User:** Username, email, full name, avatar, password (hashed), role, address, phone, bio, designation, status, login history, etc.
+- **Department:** Name, code, description, status, head, isDeleted
+- **Attendance:** Employee, department, date, status, shift, clockIn/out, remarks, location, isLate, overtime, type, isDeleted
+- **HR:** Employee, leave requests, notice period, onboarding/resignation status, isSuperAdmin, isDeleted
+- **Sales, AfterSales, DataMining, Telecom, Training, Membership, JobApplication:** See `server/src/models/` for full schema details
+
+### Middlewares
+- **auth.middleware.js:** JWT authentication
+- **role.middleware.js:** Role-based access control
+- **multer.middleware.js:** File uploads (temp storage)
+
+### Utilities
+- **ApiError/ApiResponse:** Standardized error and response objects
+- **asyncHandler:** Async error handling for routes
+- **cloudinary.js:** Cloud storage integration
+- **sendEmail.js:** Nodemailer email utility
+- **generateOTP.js:** OTP generation
+
+### Auth & Session
+- **JWT:** Used for API authentication
+- **Google OAuth:** Passport.js strategy for Google login
+- **Session:** express-session with MongoStore for Google OAuth
+
+### API Routes
+- See `server/src/routes/` for all endpoints, including users, departments, attendance, HR, and more.
 
 ---
 
-## 🗄️ Backend Overview
+## 🖥️ Frontend (Client) Details
 
-- **Modular Models:**
-  - `User`, `Department`, `Attendance`, `HR`, `Sales`, `Training`, `DataMining`, `AfterSales`, `Telecom`, `Membership`, `JobApplication`
-- **Controllers:** Business logic for users, departments, auth
-- **Routes:** RESTful API endpoints for all resources
-- **Middlewares:** Auth, role checks, file uploads (Multer), error handling
-- **Utils:** Email (Nodemailer), file storage (Cloudinary), OTP, etc.
-- **Session Management:** Express-session, MongoStore, Passport.js
+### Structure
+- **Components:** Modular, grouped by feature (attendance, department, forms, profile, hrTabs, ui)
+- **Pages:** Route-level views (Dashboard, Attendance, HR, Department, Auth, Profile, etc.)
+- **Hooks:** Custom hooks for data fetching, logic, and state (see `src/hooks/`)
+- **Store:** Redux Toolkit slices for state management (auth, user, department, attendance, HR, etc.)
+- **Services:** API utilities (axios instance, route protection)
+- **Layouts:** App layout wrappers
+- **Utils:** Helper functions (date formatting, PDF export, etc.)
+
+### Key Conventions
+- **Component Organization:** Grouped by feature, reusable UI in `ui/`
+- **State Management:** Redux Toolkit, custom hooks
+- **Styling:** Tailwind CSS, global styles in `App.css` and `index.css`
+- **API Calls:** Centralized in `src/services/`
+- **Assets:** In `src/assets/` and `public/`
+- **Linting:** ESLint and Prettier for code quality
+
+### Main Scripts
+- `npm run dev` – Start development server
+- `npm run build` – Build for production
+- `npm run lint` – Lint code
 
 ---
 

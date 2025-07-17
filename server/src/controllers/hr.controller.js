@@ -565,7 +565,198 @@ const getSuperAdmins = asyncHandler(async (req, res) => {
  * Get all active (non-deleted, non-resigned) employees
  */
 const getActiveEmployees = asyncHandler(async (req, res) => {
-  // TODO: Implement
+  let {
+    page = 1,
+    limit = 20,
+    search = "",
+    department,
+    role,
+    format, // only "excel" is supported
+  } = req.query;
+
+  page = Math.max(parseInt(page), 1);
+  limit = Math.min(Math.max(parseInt(limit), 1), 100);
+  const skip = (page - 1) * limit;
+  const isExport = format === "excel";
+
+  const pipeline = [];
+
+  // Match active HR records
+  pipeline.push({
+    $match: {
+      isDeleted: false,
+      resignationStatus: { $nin: ["resigned", "accepted"] },
+    },
+  });
+
+  // Join with users
+  pipeline.push({
+    $lookup: {
+      from: "users",
+      localField: "employee",
+      foreignField: "_id",
+      as: "employeeDetails",
+    },
+  });
+  pipeline.push({ $unwind: "$employeeDetails" });
+
+  // Filter by user.isActive
+  pipeline.push({ $match: { "employeeDetails.isActive": true } });
+
+  // Search support
+  if (search.trim()) {
+    const regex = new RegExp(search.trim(), "i");
+    pipeline.push({
+      $match: {
+        $or: [
+          { "employeeDetails.fullName": regex },
+          { "employeeDetails.email": regex },
+          { "employeeDetails.username": regex },
+        ],
+      },
+    });
+  }
+
+  // Join with memberships
+  pipeline.push({
+    $lookup: {
+      from: "memberships",
+      localField: "employee",
+      foreignField: "user",
+      as: "memberships",
+    },
+  });
+
+  // Filter by role
+  if (role) {
+    pipeline.push({
+      $match: {
+        "memberships.role": role,
+      },
+    });
+  }
+
+  // Join with departments
+  pipeline.push({
+    $lookup: {
+      from: "departments",
+      localField: "memberships.department",
+      foreignField: "_id",
+      as: "departments",
+    },
+  });
+
+  // Filter by department ID
+  if (department && mongoose.Types.ObjectId.isValid(department)) {
+    pipeline.push({
+      $match: {
+        "departments._id": new mongoose.Types.ObjectId(department),
+      },
+    });
+  }
+
+  // Final projection
+  pipeline.push({
+    $project: {
+      _id: 1,
+      noticePeriod: 1,
+      onboardingStatus: 1,
+      resignationStatus: 1,
+      isSuperAdmin: 1,
+      createdAt: 1,
+      updatedAt: 1,
+      employee: {
+        _id: "$employeeDetails._id",
+        fullName: "$employeeDetails.fullName",
+        username: "$employeeDetails.username",
+        email: "$employeeDetails.email",
+        avatar: "$employeeDetails.avatar",
+        role: "$employeeDetails.role",
+        designation: "$employeeDetails.designation",
+        doj: "$employeeDetails.doj",
+        phone: "$employeeDetails.phone",
+      },
+      memberships: {
+        $map: {
+          input: "$memberships",
+          as: "m",
+          in: {
+            role: "$$m.role",
+            departmentId: "$$m.department",
+          },
+        },
+      },
+      departments: {
+        $map: {
+          input: "$departments",
+          as: "d",
+          in: {
+            _id: "$$d._id",
+            name: "$$d.name",
+            code: "$$d.code",
+            status: "$$d.status",
+          },
+        },
+      },
+    },
+  });
+
+  // Handle Excel Export (no pagination)
+  if (isExport) {
+    const exportData = await HR.aggregate(pipeline);
+    if (!exportData.length) throw new ApiError(404, "No active employees found");
+
+    const flatData = exportData.map((item) => ({
+      Name: item.employee.fullName,
+      Username: item.employee.username,
+      Email: item.employee.email,
+      Phone: item.employee.phone,
+      Department: item.departments.map((d) => d.name).join(", "),
+      Role: item.memberships.map((m) => m.role).join(", "),
+      Onboarding: item.onboardingStatus,
+      Resignation: item.resignationStatus,
+      NoticePeriod: item.noticePeriod,
+      DOJ: item.employee.doj ? new Date(item.employee.doj).toLocaleDateString() : "",
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(flatData);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Active Employees");
+
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    res.setHeader("Content-Disposition", "attachment; filename=active_employees.xlsx");
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    return res.status(200).send(buffer);
+  }
+
+  // Count total records for pagination
+  const totalRecords = await HR.aggregate([...pipeline, { $count: "count" }]);
+  const total = totalRecords?.[0]?.count || 0;
+  const totalPages = Math.ceil(total / limit);
+
+  pipeline.push({ $sort: { "employee.fullName": 1 } });
+  pipeline.push({ $skip: skip });
+  pipeline.push({ $limit: limit });
+
+  const paginated = await HR.aggregate(pipeline);
+
+  const responseData = {
+    total,
+    page,
+    limit,
+    totalPages,
+    hasNextPage: page < totalPages,
+    hasPrevPage: page > 1,
+    records: paginated,
+  };
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, responseData, "Active employees fetched successfully"));
 });
 
 export {

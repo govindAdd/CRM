@@ -224,9 +224,11 @@ export const getSuperAdmins = createAsyncThunk(
 
 export const getActiveEmployees = createAsyncThunk(
   "hr/getActiveEmployees",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const res = await api.get("/hr/active");
+      const query = new URLSearchParams(params).toString();
+      console.log("query",query);
+      const res = await api.get(`/hr/active?${query}`);
       return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data);
