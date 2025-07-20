@@ -1,7 +1,8 @@
+// src/store/hrSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../services/axios";
 
-// ====================== Thunks ====================== //
+// ====================== Async Thunks ====================== //
 
 // HR Management
 export const createHRRecord = createAsyncThunk(
@@ -49,7 +50,6 @@ export const restoreHRRecord = createAsyncThunk(
     } catch (err) {
       const fallbackMessage = "Failed to restore HR record.";
       const errorData = err.response?.data;
-
       return rejectWithValue({
         message: errorData?.message || fallbackMessage,
         status: err.response?.status || 500,
@@ -57,7 +57,6 @@ export const restoreHRRecord = createAsyncThunk(
     }
   }
 );
-
 
 export const getAllHRRecords = createAsyncThunk(
   "hr/getAll",
@@ -163,12 +162,17 @@ export const getOnboardingEmployees = createAsyncThunk(
 // Resignation
 export const submitResignation = createAsyncThunk(
   "hr/submitResignation",
-  async (id, { rejectWithValue }) => {
+  async ({ id, noticePeriod }, { rejectWithValue }) => {
     try {
-      const res = await api.post(`/hr/${id}/resignation`);
+      const res = await api.post(`/hr/${id}/resignation`, { noticePeriod });
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data);
+      const fallbackMessage = "Failed to submit resignation.";
+      const errorData = err.response?.data;
+      return rejectWithValue({
+        message: errorData?.message || fallbackMessage,
+        status: err.response?.status || 500,
+      });
     }
   }
 );
@@ -227,7 +231,6 @@ export const getActiveEmployees = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const query = new URLSearchParams(params).toString();
-      console.log("query",query);
       const res = await api.get(`/hr/active?${query}`);
       return res.data.data;
     } catch (err) {
@@ -255,8 +258,8 @@ const hrSlice = createSlice({
   reducers: {
     clearHRState: (state) => {
       state.hrRecords = [];
-      state.selectedHR = null;
       state.searchResults = [];
+      state.selectedHR = null;
       state.onboarding = [];
       state.resigned = [];
       state.noticePeriods = [];
@@ -275,23 +278,19 @@ const hrSlice = createSlice({
         const index = state.hrRecords.findIndex(
           (r) => r._id === action.payload._id
         );
-        if (index !== -1) {
-          state.hrRecords[index] = action.payload;
-        }
+        if (index !== -1) state.hrRecords[index] = action.payload;
       })
       .addCase(deleteHRRecord.fulfilled, (state, action) => {
-        const id = action.payload._id;
-        const index = state.hrRecords.findIndex((r) => r._id === id);
-        if (index !== -1) {
-          state.hrRecords[index].isDeleted = true;
-        }
+        const index = state.hrRecords.findIndex(
+          (r) => r._id === action.payload._id
+        );
+        if (index !== -1) state.hrRecords[index].isDeleted = true;
       })
       .addCase(restoreHRRecord.fulfilled, (state, action) => {
-        const id = action.payload._id;
-        const index = state.hrRecords.findIndex((r) => r._id === id);
-        if (index !== -1) {
-          state.hrRecords[index].isDeleted = false;
-        }
+        const index = state.hrRecords.findIndex(
+          (r) => r._id === action.payload._id
+        );
+        if (index !== -1) state.hrRecords[index].isDeleted = false;
       })
       .addCase(searchHRRecords.pending, (state) => {
         state.searchResults = [];
@@ -304,6 +303,21 @@ const hrSlice = createSlice({
       })
       .addCase(getOnboardingEmployees.fulfilled, (state, action) => {
         state.onboarding = action.payload;
+      })
+      .addCase(submitResignation.fulfilled, (state, action) => {
+        const index = state.hrRecords.findIndex(
+          (emp) => emp._id === action.payload._id
+        );
+        if (index !== -1) {
+          state.hrRecords[index] = {
+            ...state.hrRecords[index],
+            ...action.payload,
+          };
+        }
+        const exists = state.resigned.some(
+          (emp) => emp._id === action.payload._id
+        );
+        if (!exists) state.resigned.push(action.payload);
       })
       .addCase(getResignedEmployees.fulfilled, (state, action) => {
         state.resigned = action.payload;

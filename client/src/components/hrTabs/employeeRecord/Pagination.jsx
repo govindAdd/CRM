@@ -2,13 +2,21 @@ import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import PropTypes from "prop-types";
 
-const Pagination = ({ page, setPage, hasNextPage, loading }) => {
+const Pagination = ({ page, setPage, hasNextPage, loading, handleSearch }) => {
   const handlePrevious = () => {
-    if (page > 1) setPage(page - 1);
+    if (page > 1) {
+      const newPage = page - 1;
+      setPage(newPage);
+      handleSearch(newPage);
+    }
   };
 
   const handleNext = () => {
-    if (hasNextPage) setPage(page + 1);
+    if (hasNextPage) {
+      const newPage = page + 1;
+      setPage(newPage);
+      handleSearch(newPage);
+    }
   };
 
   return (
@@ -60,6 +68,7 @@ Pagination.propTypes = {
   setPage: PropTypes.func.isRequired,
   hasNextPage: PropTypes.bool.isRequired,
   loading: PropTypes.bool,
+  handleSearch: PropTypes.func.isRequired,
 };
 
 export default Pagination;

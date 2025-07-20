@@ -3,7 +3,7 @@ import axios from "axios";
 // Create Axios instance
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_SERVER_URL}/api/v1`,
-  withCredentials: true, // ✅ Important for HttpOnly cookies
+  withCredentials: true,
   timeout: 10000,
   headers: {
     Accept: "application/json",
@@ -34,16 +34,12 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // ✅ Attempt to refresh access token via HttpOnly cookie
         const res = await api.post("/users/refresh");
 
         const { accessToken, user } = res.data?.data || {};
 
         if (accessToken) {
-          // ✅ Save new access token only
           localStorage.setItem("authToken", accessToken);
-
-          // ✅ Update Redux state with fresh user info
           const { store } = await import("../store/store.js");
           const { setUser } = await import("../store/authSlice.js");
           if (user) {
@@ -55,7 +51,6 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // ❌ Refresh failed — force logout
         const { store } = await import("../store/store.js");
         const { clearUser } = await import("../store/authSlice.js");
 

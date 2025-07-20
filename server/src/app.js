@@ -41,7 +41,9 @@ import hrRoutes from "./routes/hr.routes.js";
 // route declearation
 app.use("/api/v1/hr", hrRoutes);
 
-
+import companyRoutes from "./routes/company.route.js";
+// route declearation
+app.use("/api/v1", companyRoutes);
 
 
 

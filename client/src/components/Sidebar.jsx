@@ -14,7 +14,6 @@ import {
 } from "react-icons/fa";
 import useLogOut from "../hooks/user/useLogOut";
 import logo from "../assets/logoNew.png";
-
 const navItems = [
   { label: "My Profile", icon: FaUser, path: "/profile" },
   { label: "Department", icon: FaBuilding, path: "/department", role: ["superadmin", "admin", "manager", "hr", "head"] },
@@ -27,7 +26,6 @@ const navItems = [
   { label: "Training", icon: FaChalkboardTeacher, path: "/training", role: ["superadmin", "admin", "manager", "hr", "trainer"] },
   { label: "Telecom", icon: FaPhoneAlt, path: "/telecom", role: ["superadmin", "admin", "manager", "hr"] },
 ];
-
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { user } = useSelector((state) => state.auth, shallowEqual);
   const { handleLogout, loading } = useLogOut();
@@ -65,7 +63,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         {/* Logo & Avatar */}
         <div className="text-center shrink-0">
           <div className="flex items-center justify-center gap-2 mb-6">
-            <img src={logo} alt="Logo" className="h-10" />
+            <img src={logo} alt="ADDGOD" className="h-10" />
             <h1 className="text-xl font-extrabold text-purple-700">Add God</h1>
           </div>
 

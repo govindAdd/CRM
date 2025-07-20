@@ -5,7 +5,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { isValidObjectId } from "mongoose";
 import mongoose from "mongoose";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 
 /**
  * Create a new HR record for an employee
@@ -130,11 +130,7 @@ const deleteHRRecord = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(
-        200,
-        hrRecord,
-        "HR record soft deleted successfully."
-      )
+      new ApiResponse(200, hrRecord, "HR record soft deleted successfully.")
     );
 });
 
@@ -387,18 +383,24 @@ const exportHRData = asyncHandler(async (req, res) => {
   }));
 
   // Excel
-if (format === "excel") {
-  const workbook = XLSX.utils.book_new();
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
-  XLSX.utils.book_append_sheet(workbook, worksheet, "HR Records");
+  if (format === "excel") {
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "HR Records");
 
-  const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 
-  res.setHeader("Content-Disposition", "attachment; filename=hr_records.xlsx");
-  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=hr_records.xlsx"
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
 
-  return res.status(200).send(buffer);
-}
+    return res.status(200).send(buffer);
+  }
 
   // CSV
   if (format === "csv") {
@@ -528,7 +530,53 @@ const getOnboardingEmployees = asyncHandler(async (req, res) => {
  * Submit resignation for an employee
  */
 const submitResignation = asyncHandler(async (req, res) => {
-  // TODO: Implement
+  const { id } = req.params;
+
+  if (!isValidObjectId(id)) {
+    throw new ApiError(400, "Invalid employee ID.");
+  }
+
+  const employee = await User.findOne({
+    _id: id,
+    isActive: true,
+  }).select("_id fullName email username");
+
+  if (!employee) {
+    throw new ApiError(404, "Active employee not found.");
+  }
+
+  const updated = await HR.findOneAndUpdate(
+    {
+      employee: employee._id,
+      resignationStatus: { $in: ["none", "rejected"] },
+      isDeleted: false,
+    },
+    {
+      $set: {
+        resignationStatus: "resigned",
+        noticePeriod: req.body.noticePeriod?.trim() || null,
+        updatedAt: new Date(),
+      },
+    },
+    { new: true }
+  ).populate("employee", "fullName email username");
+
+  if (!updated) {
+    throw new ApiError(
+      400,
+      "Unable to submit resignation. Either already submitted or not onboarded."
+    );
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        updated,
+        `Resignation submitted for ${employee.fullName}.`
+      )
+    );
 });
 
 /**
@@ -704,7 +752,8 @@ const getActiveEmployees = asyncHandler(async (req, res) => {
   // Handle Excel Export (no pagination)
   if (isExport) {
     const exportData = await HR.aggregate(pipeline);
-    if (!exportData.length) throw new ApiError(404, "No active employees found");
+    if (!exportData.length)
+      throw new ApiError(404, "No active employees found");
 
     const flatData = exportData.map((item) => ({
       Name: item.employee.fullName,
@@ -716,7 +765,9 @@ const getActiveEmployees = asyncHandler(async (req, res) => {
       Onboarding: item.onboardingStatus,
       Resignation: item.resignationStatus,
       NoticePeriod: item.noticePeriod,
-      DOJ: item.employee.doj ? new Date(item.employee.doj).toLocaleDateString() : "",
+      DOJ: item.employee.doj
+        ? new Date(item.employee.doj).toLocaleDateString()
+        : "",
     }));
 
     const workbook = XLSX.utils.book_new();
@@ -725,7 +776,10 @@ const getActiveEmployees = asyncHandler(async (req, res) => {
 
     const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 
-    res.setHeader("Content-Disposition", "attachment; filename=active_employees.xlsx");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=active_employees.xlsx"
+    );
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -756,7 +810,13 @@ const getActiveEmployees = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, responseData, "Active employees fetched successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        responseData,
+        "Active employees fetched successfully"
+      )
+    );
 });
 
 export {

@@ -4,8 +4,8 @@ import publicProfileReducer from './publicProfileSlice';
 import userReducer from './userSlice';
 import { departmentReducer, departmentEmployeesReducer } from './departmentSlice';
 import attendanceReducer from './attendanceSlice';
-import hrReducer from './hrSlice';               // ✅ New
-import leaveReducer from './leaveSlice';         // ✅ New
+import hrReducer from './hrSlice';
+import leaveReducer from './leaveSlice';
 
 export const store = configureStore({
   reducer: {
