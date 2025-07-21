@@ -15,7 +15,7 @@ const leaveRequestSchema = new Schema(
 
     type: {
       type: String,
-      enum: ["leave", "week-off", "holiday", "other"],
+      enum: ["leave", "weekoff", "holiday", "other"],
       default: "leave",
     },
 

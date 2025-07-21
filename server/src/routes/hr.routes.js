@@ -30,6 +30,7 @@ import {
   getActiveNoticePeriods,
   getSuperAdmins,
   getActiveEmployees,
+  getAllLeaveRequestsForApproval,
 } from "../controllers/hr.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -96,8 +97,14 @@ router.delete("/:id/leave/:leaveIndex", verifyJWT, deleteLeaveRequest);
 router.patch(
   "/:id/leave/:leaveIndex/approve",
   verifyJWT,
-  roleBasedAccess("admin", "superadmin"),
+  roleBasedAccess("admin", "superadmin", "hr", "manager"),
   approveLeaveRequest
+);
+router.get(
+  "/getAllLeaveRequestsForApproval",
+  verifyJWT,
+  roleBasedAccess("admin", "superadmin", "hr", "manager"),
+  getAllLeaveRequestsForApproval
 );
 router.patch(
   "/:id/leave/:leaveIndex/reject",

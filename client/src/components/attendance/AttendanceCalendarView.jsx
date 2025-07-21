@@ -32,7 +32,7 @@ const getStatusText = (status) => {
   switch (status) {
     case "present": return "Present";
     case "leave": return "Leave";
-    case "weekoff": return "Week Off";
+    case "weekoff": return "WeekOff";
     case "half-day": return "Half Day";
     case "absent": return "Absent";
     default: return "Unknown";
@@ -45,6 +45,7 @@ const AttendanceCalendarView = ({ filters = {} }) => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const { records, fetchAttendance, isLoading } = useGetAllAttendance();
+  console.log("Attendance records:", records);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -204,7 +205,7 @@ const AttendanceCalendarView = ({ filters = {} }) => {
             <option value="present">Present</option>
             <option value="absent">Absent</option>
             <option value="leave">Leave</option>
-            <option value="weekoff">Week Off</option>
+            <option value="weekoff">WeekOff</option>
             <option value="halfday">Half Day</option>
           </select>
         </div>

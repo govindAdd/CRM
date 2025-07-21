@@ -6,7 +6,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { isValidObjectId } from "mongoose";
 import mongoose from "mongoose";
 import * as XLSX from "xlsx";
-
+import { Attendance } from "../models/attendance.model.js";
 /**
  * Create a new HR record for an employee
  */
@@ -423,7 +423,190 @@ const exportHRData = asyncHandler(async (req, res) => {
  * Create a leave request for an employee
  */
 const createLeaveRequest = asyncHandler(async (req, res) => {
-  // TODO: Implement
+  const { from, to, reason, type = "leave" } = req.body;
+  const requestedBy = req.user?._id;
+
+  if (!from || !to) {
+    throw new ApiError(400, "'From' and 'To' dates are required");
+  }
+
+  const startDate = new Date(from);
+  const endDate = new Date(to);
+  if (isNaN(startDate) || isNaN(endDate)) {
+    throw new ApiError(400, "Invalid date format");
+  }
+
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
+  const hr = await HR.findOne({ employee: requestedBy, isDeleted: false });
+  if (!hr) throw new ApiError(404, "HR profile not found");
+
+  // ======================= WEEK-OFF =======================
+  if (type === "weekoff") {
+    if (startDate.getTime() !== endDate.getTime()) {
+      throw new ApiError(400, "Week-off must be only one day");
+    }
+
+    const weekStart = new Date(startDate);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6); // Saturday
+    weekStart.setHours(0, 0, 0, 0);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    // Check if week-off already exists in Attendance for this week
+    const existingAttendance = await Attendance.findOne({
+      employee: requestedBy,
+      date: { $gte: weekStart, $lte: weekEnd },
+      status: "weekoff",
+      isDeleted: false,
+    });
+
+    if (existingAttendance) {
+      return res.status(409).json(new ApiResponse(409, null, "Week-off already exists this week"));
+    }
+
+    // Check if week-off already requested this week
+    const existingRequest = hr.leaveRequests?.some(
+      (req) =>
+        req.type === "weekoff" &&
+        new Date(req.from) >= weekStart &&
+        new Date(req.to) <= weekEnd &&
+        req.status === "pending"
+    );
+
+    if (existingRequest) {
+      return res.status(409).json(new ApiResponse(409, null, "Week-off already requested this week"));
+    }
+
+    hr.leaveRequests.push({
+      from: startDate,
+      to: startDate,
+      reason,
+      type: "weekoff",
+      status: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await hr.save();
+
+    return res.status(201).json(
+      new ApiResponse(201, {
+        type: "weekoff",
+        date: startDate.toISOString().split("T")[0],
+      }, "Week-off request submitted")
+    );
+  }
+
+  // =================== OTHER LEAVE TYPES ===================
+  if (endDate < startDate) {
+    throw new ApiError(400, "'To' date must be equal to or after 'From'");
+  }
+
+  // Build date range
+  const leaveDates = [];
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    leaveDates.push(new Date(d));
+  }
+
+  // Check attendance conflicts
+  const existingAttendance = await Attendance.find({
+    employee: requestedBy,
+    date: { $in: leaveDates },
+    isDeleted: false,
+  });
+
+  const existingDates = new Set(existingAttendance.map((r) => r.date.toISOString()));
+  const newLeaveDates = leaveDates.filter((d) => !existingDates.has(d.toISOString()));
+
+  if (!newLeaveDates.length) {
+    return res.status(409).json(new ApiResponse(409, null, "Leave already exists for selected dates"));
+  }
+
+  // Save to HR.leaveRequests[]
+  hr.leaveRequests.push({
+    from: startDate,
+    to: endDate,
+    reason,
+    type,
+    status: "pending",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  await hr.save();
+
+  return res.status(201).json(
+    new ApiResponse(201, {
+      type,
+      dates: newLeaveDates.map((d) => d.toISOString().split("T")[0]),
+    }, "Leave request submitted")
+  );
+});
+
+const getAllLeaveRequestsForApproval = asyncHandler(async (req, res) => {
+  const adminId = req.user?._id;
+
+  if (!isValidObjectId(adminId)) {
+    throw new ApiError(403, "Unauthorized access.");
+  }
+
+  const leaveData = await HR.aggregate([
+    {
+      $set: {
+        leaveRequestsArray: "$leaveRequests",
+      },
+    },
+    {
+      $unwind: {
+        path: "$leaveRequests",
+        includeArrayIndex: "leaveIndex",
+      },
+    },
+    {
+      $match: {
+        "leaveRequests.status": "pending",
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "employee",
+        foreignField: "_id",
+        as: "userDetails",
+      },
+    },
+    {
+      $unwind: "$userDetails",
+    },
+    {
+      $project: {
+        _id: 0,
+        hrId: "$_id",
+        leaveIndex: "$leaveIndex",
+        from: "$leaveRequests.from",
+        to: "$leaveRequests.to",
+        type: "$leaveRequests.type",
+        reason: "$leaveRequests.reason",
+        status: "$leaveRequests.status",
+        createdAt: "$leaveRequests.createdAt",
+        user: {
+          _id: "$userDetails._id",
+          name: "$userDetails.name",
+          email: "$userDetails.email",
+          role: "$userDetails.role",
+        },
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    success: true,
+    count: leaveData.length,
+    leaveRequests: leaveData,
+  });
 });
 
 /**
@@ -444,9 +627,94 @@ const deleteLeaveRequest = asyncHandler(async (req, res) => {
  * Approve a leave request
  */
 const approveLeaveRequest = asyncHandler(async (req, res) => {
-  // TODO: Implement
-});
+  const { id: employeeId, leaveIndex } = req.params;
+  const approvedBy = req.user?._id;
 
+  if (!isValidObjectId(employeeId)) {
+    throw new ApiError(400, "Invalid employee ID");
+  }
+
+  const hr = await HR.findOne({ employee: employeeId, isDeleted: false });
+  if (!hr) throw new ApiError(404, "HR profile not found");
+  console.log("hr:", hr);
+  const leaveReq = hr.leaveRequests?.[leaveIndex];
+  console.log("leaveReq:", leaveReq);
+  if (!leaveReq) throw new ApiError(404, "Leave request not found");
+
+  const { from, to, reason, type } = leaveReq;
+
+  const startDate = new Date(from);
+  const endDate = new Date(to);
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
+  const dates = [];
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    dates.push(new Date(d));
+  }
+
+  // ======================== WEEK-OFF APPROVAL ========================
+  if (type === "weekoff") {
+    if (dates.length !== 1) {
+      throw new ApiError(400, "Week-off must have only one date");
+    }
+
+    const existing = await Attendance.findOne({
+      employee: employeeId,
+      date: dates[0],
+      status: "weekoff",
+      isDeleted: false,
+    });
+
+    if (existing) {
+      throw new ApiError(409, "Week-off already exists for that date");
+    }
+
+    await Attendance.create({
+      employee: employeeId,
+      date: dates[0],
+      status: "weekoff",
+      type: "system",
+    });
+  }
+
+  // ==================== OTHER LEAVE TYPES APPROVAL ====================
+  else {
+    const existing = await Attendance.find({
+      employee: employeeId,
+      date: { $in: dates },
+      isDeleted: false,
+    });
+
+    const existingSet = new Set(existing.map((r) => r.date.toISOString()));
+
+    const toInsert = dates
+      .filter((d) => !existingSet.has(d.toISOString()))
+      .map((date) => ({
+        employee: employeeId,
+        date,
+        reason,
+        status: "leave",
+        type,
+        source: "approved",
+        approvedBy,
+      }));
+
+    if (!toInsert.length) {
+      throw new ApiError(409, "All requested leave dates already exist");
+    }
+
+    await Attendance.insertMany(toInsert);
+  }
+
+  // ======================== REMOVE FROM HR.leaveRequests[] ========================
+  hr.leaveRequests.splice(leaveIndex, 1);
+  await hr.save();
+
+  return res.status(200).json(
+    new ApiResponse(200, null, `Leave request approved and added to attendance`)
+  );
+});
 /**
  * Reject a leave request
  */
@@ -850,4 +1118,5 @@ export {
   getActiveNoticePeriods,
   getSuperAdmins,
   getActiveEmployees,
+  getAllLeaveRequestsForApproval,
 };

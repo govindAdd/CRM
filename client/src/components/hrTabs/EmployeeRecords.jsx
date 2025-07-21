@@ -46,21 +46,27 @@ const EmployeeRecords = () => {
     loading,
   } = useSearchHRRecords();
 
-  const handleSearch = (customPage = page) => {
-    const queryParams = new URLSearchParams();
-    if (searchTerm) queryParams.set("q", searchTerm);
-    if (filters.deleted) queryParams.set("deleted", filters.deleted);
-    if (filters.onboardingStatus)
-      queryParams.set("onboardingStatus", filters.onboardingStatus);
-    if (filters.resignationStatus)
-      queryParams.set("resignationStatus", filters.resignationStatus);
+const handleSearch = (customPage = page) => {
+  const queryParams = new URLSearchParams();
+  if (searchTerm) queryParams.set("q", searchTerm);
+  if (filters.deleted) queryParams.set("deleted", filters.deleted);
+  if (filters.onboardingStatus)
+    queryParams.set("onboardingStatus", filters.onboardingStatus);
+  if (filters.resignationStatus)
+    queryParams.set("resignationStatus", filters.resignationStatus);
 
-    queryParams.set("page", customPage);
-    queryParams.set("limit", PAGE_SIZE.toString());
+  queryParams.set("page", customPage);
+  queryParams.set("limit", PAGE_SIZE.toString());
 
-    setSearchParams(queryParams);
-    handleSearchHRRecords(queryParams.toString());
-  };
+  setSearchParams(queryParams);
+  handleSearchHRRecords(queryParams.toString());
+};
+
+useEffect(() => {
+  setPage(1);
+  handleSearch(1);
+}, [searchTerm, filters]);
+
 
   const handleModalOpen = (record = null) => {
     if (record) {
@@ -82,10 +88,8 @@ const EmployeeRecords = () => {
     try {
       if (editingId) {
         await handleUpdateHRRecord(editingId, formValues);
-        toast.success("Record updated");
       } else {
         await handleCreateHRRecord(formValues, null);
-        toast.success("Record created");
       }
       setIsModalOpen(false);
       setFormValues({});

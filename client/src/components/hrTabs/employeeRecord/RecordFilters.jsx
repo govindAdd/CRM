@@ -1,5 +1,4 @@
 import React from "react";
-import classNames from "classnames";
 import { XCircle } from "lucide-react";
 
 const baseInputClass =
@@ -25,7 +24,6 @@ const RecordFilters = ({ filters, setFilters, searchTerm, setSearchTerm }) => {
 
   return (
     <div className="flex flex-wrap gap-3 items-end w-full">
-      {/* Search Input */}
       <div className="relative w-full md:w-64">
         <input
           id="search"
@@ -41,14 +39,12 @@ const RecordFilters = ({ filters, setFilters, searchTerm, setSearchTerm }) => {
         </label>
       </div>
 
-      {/* Deleted Filter */}
       <div className={wrapperClass}>
         <select
           id="deleted"
           value={filters.deleted}
           onChange={handleFilterChange("deleted")}
           className={baseInputClass}
-          aria-label="Deleted filter"
         >
           <option value="" hidden />
           <option value="true">Deleted</option>
@@ -59,14 +55,12 @@ const RecordFilters = ({ filters, setFilters, searchTerm, setSearchTerm }) => {
         </label>
       </div>
 
-      {/* Onboarding Status */}
       <div className={wrapperClass}>
         <select
           id="onboarding"
           value={filters.onboardingStatus}
           onChange={handleFilterChange("onboardingStatus")}
           className={baseInputClass}
-          aria-label="Onboarding filter"
         >
           <option value="" hidden />
           <option value="not-started">Not Started</option>
@@ -78,14 +72,12 @@ const RecordFilters = ({ filters, setFilters, searchTerm, setSearchTerm }) => {
         </label>
       </div>
 
-      {/* Resignation Status */}
       <div className={wrapperClass}>
         <select
           id="resignation"
           value={filters.resignationStatus}
           onChange={handleFilterChange("resignationStatus")}
           className={baseInputClass}
-          aria-label="Resignation filter"
         >
           <option value="" hidden />
           <option value="resigned">Resigned</option>
@@ -97,7 +89,6 @@ const RecordFilters = ({ filters, setFilters, searchTerm, setSearchTerm }) => {
         </label>
       </div>
 
-      {/* Clear Filters Button */}
       <button
         type="button"
         onClick={handleClearFilters}

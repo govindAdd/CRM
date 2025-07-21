@@ -498,9 +498,99 @@ export const deleteAllWeekOffs = asyncHandler(async (req, res) => {
     message: `${result.deletedCount} 'week-off' records deleted successfully.`,
   });
 });
+const createWeekOff = asyncHandler(async (req, res) => {
+  const { date, employees } = req.body;
+
+  // 1️⃣ Validate and normalize date
+  if (!date) {
+    throw new ApiError(400, "Date is required");
+  }
+
+  const weekOffDate = new Date(date);
+  if (isNaN(weekOffDate.getTime())) {
+    throw new ApiError(400, "Invalid date format");
+  }
+  weekOffDate.setHours(0, 0, 0, 0);
+
+  // 2️⃣ Determine target users (by IDs or all)
+  let users = [];
+
+  if (Array.isArray(employees) && employees.length > 0) {
+    const invalidIds = employees.filter((id) => !isValidObjectId(id));
+    if (invalidIds.length > 0) {
+      throw new ApiError(400, "One or more employee IDs are invalid");
+    }
+
+    users = await User.find({
+      _id: { $in: employees },
+      isBlocked: { $ne: true },
+    }).select("_id");
+  } else {
+    users = await User.find({ isBlocked: { $ne: true } }).select("_id");
+  }
+
+  if (!users.length) {
+    throw new ApiError(404, "No valid users found");
+  }
+
+  const userIds = users.map((u) => u._id);
+
+  // 3️⃣ Get already existing week-off records
+  const existingRecords = await Attendance.aggregate([
+    {
+      $match: {
+        date: weekOffDate,
+        employee: { $in: userIds },
+        status: "week-off",
+        type: "system",
+        isDeleted: false,
+      },
+    },
+    {
+      $project: { employee: 1 },
+    },
+  ]);
+
+  const existingEmployeeIds = new Set(
+    existingRecords.map((record) => String(record.employee))
+  );
+
+  // 4️⃣ Filter out users who already have a week-off record for the given date
+  const recordsToInsert = userIds
+    .filter((id) => !existingEmployeeIds.has(String(id)))
+    .map((id) => ({
+      employee: id,
+      date: weekOffDate,
+      status: "week-off",
+      type: "system",
+    }));
+
+  // 5️⃣ No new records to insert
+  if (!recordsToInsert.length) {
+    return res.status(200).json(
+      new ApiResponse(200, null, "All week-offs already exist for the selected users")
+    );
+  }
+
+  // 6️⃣ Insert new records
+  const inserted = await Attendance.insertMany(recordsToInsert);
+
+  // 7️⃣ Send response
+  return res.status(201).json(
+    new ApiResponse(
+      201,
+      {
+        insertedCount: inserted.length,
+        date: weekOffDate.toISOString().split("T")[0],
+      },
+      "Week-off(s) created successfully"
+    )
+  );
+});
 export {
   createAttendance,
   updateAttendance,
   getAllAttendance,
   autoFillWeekOffs,
+  createWeekOff,
 };

@@ -17,7 +17,7 @@ import logo from "../assets/logoNew.png";
 const navItems = [
   { label: "My Profile", icon: FaUser, path: "/profile" },
   { label: "Department", icon: FaBuilding, path: "/department", role: ["superadmin", "admin", "manager", "hr", "head"] },
-  { label: "HR", icon: FaBriefcase, path: "/hr", role: ["superadmin", "admin", "manager", "hr"] },
+  { label: "HR", icon: FaBriefcase, path: "/hr" },
   { label: "Attendance", icon: FaClock, path: "/attendance" },
   { label: "After Sales", icon: FaTools, path: "/aftersales", role: ["superadmin", "admin", "manager", "hr", "support"] },
   { label: "Data Mining", icon: FaChartLine, path: "/datamining", role: ["superadmin", "admin", "manager", "hr", "analyst"] },

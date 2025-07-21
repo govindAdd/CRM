@@ -15,3 +15,25 @@
   background-color: #a78bfa;
   border-radius: 4px;
 }
+/* Typically defined in your Tailwind CSS layer */
+.label {
+  @apply block mb-1 font-medium text-gray-700 dark:text-gray-300;
+}
+.input {
+  @apply w-full border rounded-md px-3 py-2 bg-white dark:bg-neutral-800 text-sm text-gray-900 dark:text-white border-gray-300 dark:border-neutral-700;
+}
+.btn-primary {
+  @apply bg-blue-600 text-white font-medium px-4 py-2 rounded-md hover:bg-blue-700 transition;
+}
+.btn-success {
+  @apply bg-green-600 text-white font-medium px-4 py-1 rounded-md hover:bg-green-700 transition;
+}
+.error-text {
+  @apply mt-1 text-sm text-red-600;
+}
+.th {
+  @apply px-4 py-2 font-semibold;
+}
+.td {
+  @apply px-4 py-2 border-t border-gray-200 dark:border-neutral-700;
+}
