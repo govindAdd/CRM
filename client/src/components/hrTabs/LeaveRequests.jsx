@@ -3,10 +3,7 @@ import { useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import useCreateLeaveRequest from "../../hooks/hr/leaveRequest/useCreateLeaveRequest";
-import useApproveLeaveRequest from "../../hooks/hr/leaveRequest/useApproveLeaveRequest";
-import useGetLeaveRequestsForApproval from "../../hooks/hr/leaveRequest/useGetLeaveRequestsForApproval";
-import { formatDateTime } from "../../utils/formatDateTime";
+import { toast } from "react-toastify";
 import {
   Calendar,
   FileText,
@@ -15,6 +12,11 @@ import {
   SendHorizonal,
   CheckCircle2,
 } from "lucide-react";
+
+import useCreateLeaveRequest from "../../hooks/hr/leaveRequest/useCreateLeaveRequest";
+import useApproveLeaveRequest from "../../hooks/hr/leaveRequest/useApproveLeaveRequest";
+import useGetLeaveRequestsForApproval from "../../hooks/hr/leaveRequest/useGetLeaveRequestsForApproval";
+import { formatDateTime } from "../../utils/formatDateTime";
 
 const leaveSchema = yup.object().shape({
   from: yup.string().required("From date is required"),
@@ -37,7 +39,6 @@ const leaveSchema = yup.object().shape({
 
 function LeaveRequests() {
   const auth = useSelector((state) => state.auth.user);
-
   const hasApprovePermission = useMemo(
     () => ["admin", "superadmin", "hr", "manager"].includes(auth?.role),
     [auth?.role]
@@ -52,9 +53,7 @@ function LeaveRequests() {
 
   const { submitLeaveRequest, loading: submitLoading } =
     useCreateLeaveRequest();
-
   const { approveLeave } = useApproveLeaveRequest();
-
   const {
     leaveRequests,
     getStatus,
@@ -72,23 +71,30 @@ function LeaveRequests() {
     };
     try {
       await submitLeaveRequest({ id: auth?._id, data: payload });
+      toast.success("Leave request submitted");
       reset();
-      refetchLeaveRequests(); // 🔁 Refresh after submit
+      refetchLeaveRequests();
     } catch (error) {
       console.error("Failed to submit leave request", error);
+      toast.error("Failed to submit leave request");
     }
   };
 
   const handleApprove = async (req, index) => {
     const employeeId = req.user?._id;
-    if (!employeeId) return console.error("Invalid employee ID");
+    if (!employeeId) {
+      toast.error("Invalid employee ID");
+      return;
+    }
 
     try {
       setApprovingIndex(index);
       await approveLeave({ id: employeeId, leaveIndex: index });
-      refetchLeaveRequests(); // 🔁 Refresh after approval
+      toast.success("Leave approved");
+      refetchLeaveRequests();
     } catch (error) {
       console.error("Failed to approve leave request", error);
+      toast.error("Failed to approve leave request");
     } finally {
       setApprovingIndex(null);
     }
@@ -96,7 +102,7 @@ function LeaveRequests() {
 
   return (
     <div className="max-w-7xl mx-auto p-4 space-y-10">
-      {/* Leave Form */}
+      {/* Form */}
       <section className="bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-neutral-700">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
           <SendHorizonal size={20} className="text-blue-500" /> Raise Leave
@@ -202,7 +208,9 @@ function LeaveRequests() {
                     <td className="td">
                       <button
                         onClick={() => handleApprove(req, idx)}
-                        disabled={approvingIndex !== null || req.status !== "pending"}
+                        disabled={
+                          approvingIndex !== null || req.status !== "pending"
+                        }
                         className="btn-success flex items-center gap-1"
                       >
                         <CheckCircle2 size={16} className="text-white" />
@@ -221,8 +229,8 @@ function LeaveRequests() {
                   {getStatus === "loading"
                     ? "Loading leave requests..."
                     : getError
-                      ? `Error: ${getError}`
-                      : "No leave requests yet."}
+                    ? `Error: ${getError}`
+                    : "No leave requests yet."}
                 </td>
               </tr>
             )}

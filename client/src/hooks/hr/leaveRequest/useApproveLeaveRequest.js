@@ -1,14 +1,12 @@
 import { useDispatch, useSelector } from "react-redux";
 import { approveLeaveRequest, resetLeaveStatus } from "../../../store/leaveSlice";
 import { useEffect } from "react";
-import { toast } from "react-toastify";
 
 const useApproveLeaveRequest = () => {
   const dispatch = useDispatch();
   const { loading, success, error } = useSelector((state) => state.leave.status);
 
   const approveLeave = ({ id, leaveIndex }) => {
-    console.log("Approving leave request:", { id, leaveIndex });
     if (!id || leaveIndex === undefined || leaveIndex === null) return;
     dispatch(approveLeaveRequest({ id, leaveIndex }));
   };
@@ -18,15 +16,10 @@ const useApproveLeaveRequest = () => {
   };
 
   useEffect(() => {
-    if (success) {
-      toast.success("Leave approved successfully.");
+    if (success || error) {
       resetApproveStatus();
     }
-    if (error) {
-      toast.error(error);
-      resetApproveStatus();
-    }
-  }, [success, error, dispatch]);
+  }, [success, error]);
 
   useEffect(() => {
     return () => {
