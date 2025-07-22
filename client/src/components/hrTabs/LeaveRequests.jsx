@@ -113,22 +113,25 @@ function LeaveRequests() {
           className="grid grid-cols-1 sm:grid-cols-2 gap-4"
         >
           <div>
-            <label className="label flex items-center gap-1">
-              <Calendar size={16} className="text-emerald-500" /> From
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200">
+              <Calendar size={16} className="text-emerald-500" />{" "}
+              <span>From</span>
             </label>
             <input type="date" {...register("from")} className="input" />
             {errors.from && <p className="error-text">{errors.from.message}</p>}
           </div>
           <div>
-            <label className="label flex items-center gap-1">
-              <Calendar size={16} className="text-rose-500" /> To
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200">
+              <Calendar size={16} className="text-rose-500" />
+              <span>To</span>
             </label>
             <input type="date" {...register("to")} className="input" />
             {errors.to && <p className="error-text">{errors.to.message}</p>}
           </div>
           <div className="col-span-full">
-            <label className="label flex items-center gap-1">
-              <FileText size={16} className="text-indigo-500" /> Reason
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200">
+              <FileText size={16} className="text-indigo-500" />
+              <span>Reason</span>
             </label>
             <input
               type="text"
@@ -141,8 +144,9 @@ function LeaveRequests() {
             )}
           </div>
           <div className="col-span-full">
-            <label className="label flex items-center gap-1">
-              <Clock size={16} className="text-yellow-500" /> Type
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200">
+              <Clock size={16} className="text-yellow-500" />
+              <span>Type</span>
             </label>
             <select {...register("type")} className="input capitalize">
               <option value="">Select Type</option>
