@@ -68,6 +68,11 @@ const attendanceSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    expiresAt: {
+      type: Date,
+      default: () => new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      index: { expires: 0 },
+    },
   },
   {
     timestamps: true,
@@ -92,9 +97,10 @@ attendanceSchema.virtual("workedMinutes").get(function () {
 });
 
 attendanceSchema.virtual("workedHours").get(function () {
-  const minutes = this.clockIn && this.clockOut
-    ? Math.floor((this.clockOut - this.clockIn) / 60000)
-    : 0;
+  const minutes =
+    this.clockIn && this.clockOut
+      ? Math.floor((this.clockOut - this.clockIn) / 60000)
+      : 0;
   return (minutes / 60).toFixed(2);
 });
 
@@ -103,7 +109,11 @@ attendanceSchema.pre("save", async function (next) {
   const attendance = this;
 
   // Validate clockIn < clockOut
-  if (attendance.clockIn && attendance.clockOut && attendance.clockIn > attendance.clockOut) {
+  if (
+    attendance.clockIn &&
+    attendance.clockOut &&
+    attendance.clockIn > attendance.clockOut
+  ) {
     return next(new Error("Clock-in time must be before clock-out time"));
   }
 
@@ -121,14 +131,18 @@ attendanceSchema.pre("save", async function (next) {
 
   // Auto-calculate overtime
   if (attendance.clockIn && attendance.clockOut) {
-    const worked = Math.floor((attendance.clockOut - attendance.clockIn) / 60000);
+    const worked = Math.floor(
+      (attendance.clockOut - attendance.clockIn) / 60000
+    );
     attendance.overtimeMinutes = worked > 480 ? worked - 480 : 0;
   }
 
   // Auto-assign department if missing
   if (!attendance.department && attendance.employee) {
     const { Membership } = await import("./membership.model.js");
-    const membership = await Membership.findOne({ user: attendance.employee }).select("department");
+    const membership = await Membership.findOne({
+      user: attendance.employee,
+    }).select("department");
     if (membership) {
       attendance.department = membership.department;
     }
@@ -144,8 +158,6 @@ attendanceSchema.pre(/^find/, function (next) {
   }
   next();
 });
-
-
 
 // ======================= Export Model =======================
 export const Attendance = mongoose.model("Attendance", attendanceSchema);
