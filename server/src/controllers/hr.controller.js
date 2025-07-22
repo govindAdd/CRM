@@ -636,28 +636,26 @@ const approveLeaveRequest = asyncHandler(async (req, res) => {
 
   const hr = await HR.findOne({ employee: employeeId, isDeleted: false });
   if (!hr) throw new ApiError(404, "HR profile not found");
-  console.log("hr:", hr);
   const leaveReq = hr.leaveRequests?.[leaveIndex];
-  console.log("leaveReq:", leaveReq);
   if (!leaveReq) throw new ApiError(404, "Leave request not found");
 
   const { from, to, reason, type } = leaveReq;
-
   const startDate = new Date(from);
   const endDate = new Date(to);
   startDate.setHours(0, 0, 0, 0);
   endDate.setHours(0, 0, 0, 0);
-
+  
   const dates = [];
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
     dates.push(new Date(d));
   }
-
+  
   // ======================== WEEK-OFF APPROVAL ========================
   if (type === "weekoff") {
     if (dates.length !== 1) {
       throw new ApiError(400, "Week-off must have only one date");
     }
+  
 
     const existing = await Attendance.findOne({
       employee: employeeId,
@@ -679,6 +677,9 @@ const approveLeaveRequest = asyncHandler(async (req, res) => {
   }
 
   // ==================== OTHER LEAVE TYPES APPROVAL ====================
+  if (endDate < startDate) {
+    throw new ApiError(400, "'To' date must be equal to or after 'From'");
+  }
   else {
     const existing = await Attendance.find({
       employee: employeeId,
@@ -694,8 +695,8 @@ const approveLeaveRequest = asyncHandler(async (req, res) => {
         employee: employeeId,
         date,
         reason,
-        status: "leave",
-        type,
+        status: type,
+        type: "system",
         source: "approved",
         approvedBy,
       }));
