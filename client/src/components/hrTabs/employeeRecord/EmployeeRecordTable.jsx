@@ -2,6 +2,7 @@ import React from "react";
 import Tippy from "@tippyjs/react";
 import { Trash2, Undo2, Pencil } from "lucide-react";
 import "tippy.js/dist/tippy.css";
+import { useRef } from "react";
 
 const EmployeeRecordTable = ({
   records = [],
@@ -30,7 +31,7 @@ const EmployeeRecordTable = ({
       </div>
     );
   }
-
+  const btnRef = useRef(null);
   return (
     <div className="grid gap-4">
       {records.map((rec, index) => (
@@ -105,6 +106,7 @@ const EmployeeRecordTable = ({
           <div className="flex items-center justify-between gap-1.5 sm:justify-end shrink-0 w-full sm:w-auto">
             <Tippy content="Edit">
               <button
+                ref={btnRef}
                 onClick={() => handleModalOpen(rec)}
                 disabled={updateLoading}
                 className="p-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition disabled:opacity-50"

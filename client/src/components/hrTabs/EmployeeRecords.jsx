@@ -122,10 +122,10 @@ useEffect(() => {
     );
   };
 
-  useEffect(() => {
-    const queryParams = new URLSearchParams(searchParams.toString());
-    handleSearchHRRecords(queryParams.toString());
-  }, []);
+useEffect(() => {
+  handleSearch();
+}, []);
+
 
   useEffect(() => {
     const handleClickOutside = (e) => {

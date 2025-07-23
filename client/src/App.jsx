@@ -9,6 +9,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
+import NotFound from "./pages/NotFound";
 import Department from "./pages/Department";
 import AttendancePage from "./pages/AttendancePage";
 import HrPage from "./pages/HrPage";
@@ -19,6 +20,7 @@ function App() {
   return (
     <AuthInitializer>
       <Routes>
+        <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/users/:username" element={<PublicProfilePage />} />

@@ -46,7 +46,6 @@ function ActiveEmployees({ query = { page: 1, setPage: () => {} } }) {
     hasPrevPage,
     refetch,
   } = useGetActiveEmployees(queryString);
-  console.log("ActiveEmployees", { records });
   const handleRefresh = () => refetch();
 
   const handleExportToExcel = () => {

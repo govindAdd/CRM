@@ -23,7 +23,7 @@ const useCreateHRRecord = () => {
           ? err
           : err?.message || "Failed to create HR record";
 
-      toast.error(message);
+      toast.error("Failed to create HR record");
       throw new Error(message);
     }
   };

@@ -70,7 +70,10 @@ const RecordActions = ({
           onClick={handleSearch}
           className={`${buttonBase} bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-black dark:text-white group`}
         >
-          <RotateCw size={18} className="group-hover:rotate-180 transition-transform duration-300" />
+          <RotateCw
+            size={18}
+            className="group-hover:rotate-180 transition-transform duration-300"
+          />
         </Button>
       </Tippy>
     </div>
