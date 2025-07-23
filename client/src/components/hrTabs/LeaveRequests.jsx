@@ -11,10 +11,12 @@ import {
   User2,
   SendHorizonal,
   CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
 import useCreateLeaveRequest from "../../hooks/hr/leaveRequest/useCreateLeaveRequest";
 import useApproveLeaveRequest from "../../hooks/hr/leaveRequest/useApproveLeaveRequest";
+import useRejectLeaveRequest from "../../hooks/hr/leaveRequest/useRejectLeaveRequest";
 import useGetLeaveRequestsForApproval from "../../hooks/hr/leaveRequest/useGetLeaveRequestsForApproval";
 import { formatDateTime } from "../../utils/formatDateTime";
 
@@ -54,6 +56,7 @@ function LeaveRequests() {
   const { submitLeaveRequest, loading: submitLoading } =
     useCreateLeaveRequest();
   const { approveLeave } = useApproveLeaveRequest();
+  const { rejectLeave } = useRejectLeaveRequest();
   const {
     leaveRequests,
     getStatus,
@@ -61,7 +64,7 @@ function LeaveRequests() {
     refetch: refetchLeaveRequests,
   } = useGetLeaveRequestsForApproval();
 
-  const [approvingIndex, setApprovingIndex] = useState(null);
+  const [processingIndex, setProcessingIndex] = useState(null);
 
   const onSubmit = async (formData) => {
     const payload = {
@@ -75,28 +78,42 @@ function LeaveRequests() {
       reset();
       refetchLeaveRequests();
     } catch (error) {
-      console.error("Failed to submit leave request", error);
+      console.error("Submit failed", error);
       toast.error("Failed to submit leave request");
     }
   };
 
   const handleApprove = async (req, index) => {
     const employeeId = req.user?._id;
-    if (!employeeId) {
-      toast.error("Invalid employee ID");
-      return;
-    }
+    if (!employeeId) return toast.error("Invalid employee ID");
 
     try {
-      setApprovingIndex(index);
+      setProcessingIndex(index);
       await approveLeave({ id: employeeId, leaveIndex: index });
       toast.success("Leave approved");
       refetchLeaveRequests();
     } catch (error) {
-      console.error("Failed to approve leave request", error);
+      console.error("Approve failed", error);
       toast.error("Failed to approve leave request");
     } finally {
-      setApprovingIndex(null);
+      setProcessingIndex(null);
+    }
+  };
+
+  const handleReject = async (req, index) => {
+    const employeeId = req.user?._id;
+    if (!employeeId) return toast.error("Invalid employee ID");
+
+    try {
+      setProcessingIndex(index);
+      await rejectLeave({ id: employeeId, leaveIndex: index });
+      toast.success("Leave rejected");
+      refetchLeaveRequests();
+    } catch (error) {
+      console.error("Reject failed", error);
+      toast.error("Failed to reject leave request");
+    } finally {
+      setProcessingIndex(null);
     }
   };
 
@@ -113,40 +130,31 @@ function LeaveRequests() {
           className="grid grid-cols-1 sm:grid-cols-2 gap-4"
         >
           <div>
-            <label className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200">
-              <Calendar size={16} className="text-emerald-500" />{" "}
-              <span>From</span>
+            <label className="label">
+              <Calendar size={16} className="text-emerald-500" /> From
             </label>
             <input type="date" {...register("from")} className="input" />
             {errors.from && <p className="error-text">{errors.from.message}</p>}
           </div>
           <div>
-            <label className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200">
-              <Calendar size={16} className="text-rose-500" />
-              <span>To</span>
+            <label className="label">
+              <Calendar size={16} className="text-rose-500" /> To
             </label>
             <input type="date" {...register("to")} className="input" />
             {errors.to && <p className="error-text">{errors.to.message}</p>}
           </div>
           <div className="col-span-full">
-            <label className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200">
-              <FileText size={16} className="text-indigo-500" />
-              <span>Reason</span>
+            <label className="label">
+              <FileText size={16} className="text-indigo-500" /> Reason
             </label>
-            <input
-              type="text"
-              {...register("reason")}
-              className="input"
-              placeholder="Reason for leave"
-            />
+            <input type="text" {...register("reason")} className="input" />
             {errors.reason && (
               <p className="error-text">{errors.reason.message}</p>
             )}
           </div>
           <div className="col-span-full">
-            <label className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200">
-              <Clock size={16} className="text-yellow-500" />
-              <span>Type</span>
+            <label className="label">
+              <Clock size={16} className="text-yellow-500" /> Type
             </label>
             <select {...register("type")} className="input capitalize">
               <option value="">Select Type</option>
@@ -171,7 +179,7 @@ function LeaveRequests() {
         </form>
       </section>
 
-      {/* Leave Table */}
+      {/* Table */}
       <section className="bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-neutral-700 overflow-x-auto">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
           <User2 size={20} className="text-purple-500" /> Leave Requests
@@ -209,16 +217,36 @@ function LeaveRequests() {
                   </td>
                   <td className="td">{req.user?.email || "N/A"}</td>
                   {hasApprovePermission && (
-                    <td className="td">
+                    <td className="td flex gap-2">
                       <button
                         onClick={() => handleApprove(req, idx)}
                         disabled={
-                          approvingIndex !== null || req.status !== "pending"
+                          processingIndex !== null || req.status !== "pending"
                         }
-                        className="btn-success flex items-center gap-1"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-white bg-green-600 hover:bg-green-700 rounded-md text-sm font-medium transition"
                       >
-                        <CheckCircle2 size={16} className="text-white" />
-                        {approvingIndex === idx ? "Approving..." : "Approve"}
+                        {processingIndex === idx ? (
+                          "Approving..."
+                        ) : (
+                          <>
+                            <CheckCircle2 size={16} /> Approve
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleReject(req, idx)}
+                        disabled={
+                          processingIndex !== null || req.status !== "pending"
+                        }
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-white bg-red-600 hover:bg-red-700 rounded-md text-sm font-medium transition"
+                      >
+                        {processingIndex === idx ? (
+                          "Rejecting..."
+                        ) : (
+                          <>
+                            <XCircle size={16} /> Reject
+                          </>
+                        )}
                       </button>
                     </td>
                   )}

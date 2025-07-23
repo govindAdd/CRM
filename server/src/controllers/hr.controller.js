@@ -545,7 +545,7 @@ const createLeaveRequest = asyncHandler(async (req, res) => {
     }, "Leave request submitted")
   );
 });
-
+// Get all leave requests for approval
 const getAllLeaveRequestsForApproval = asyncHandler(async (req, res) => {
   const adminId = req.user?._id;
 
@@ -727,8 +727,32 @@ const approveLeaveRequest = asyncHandler(async (req, res) => {
  * Reject a leave request
  */
 const rejectLeaveRequest = asyncHandler(async (req, res) => {
-  // TODO: Implement
+  const { id: employeeId, leaveIndex } = req.params;
+  const rejectedBy = req.user?._id;
+
+  const index = parseInt(leaveIndex, 10);
+  if (!isValidObjectId(employeeId)) {
+    throw new ApiError(400, "Invalid employee ID");
+  }
+
+  const hr = await HR.findOne({ employee: employeeId, isDeleted: false });
+  if (!hr) throw new ApiError(404, "HR profile not found");
+
+  const leaveReq = hr.leaveRequests?.[index];
+  if (!leaveReq) throw new ApiError(404, "Leave request not found");
+
+  // Optionally store rejection metadata before removal
+  // leaveReq.status = "rejected"; leaveReq.rejectedBy = rejectedBy; leaveReq.rejectedAt = new Date();
+
+  // Simply remove the leave request
+  hr.leaveRequests.splice(index, 1);
+  await hr.save();
+
+  return res.status(200).json(
+    new ApiResponse(200, null, "Leave request rejected and removed from HR record")
+  );
 });
+
 
 /**
  * Get leave history for an employee

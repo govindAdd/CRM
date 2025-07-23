@@ -33,7 +33,7 @@ export const approveLeaveRequest = createAsyncThunk(
 
 // Reject Leave Request
 export const rejectLeaveRequest = createAsyncThunk(
-  "leave/reject",
+  "leave/rejectLeaveRequest",
   async ({ id, leaveIndex }, { rejectWithValue }) => {
     try {
       const res = await api.patch(`/hr/${id}/leave/${leaveIndex}/reject`);
@@ -242,7 +242,7 @@ const leaveSlice = createSlice({
       // Approve Leave
       .addCase(approveLeaveRequest.fulfilled, (state, action) => {
         const updated = action.payload;
-
+         if (!updated || !updated._id) return;
         const indexInCreated = state.createdRequests.findIndex(req => req._id === updated._id);
         if (indexInCreated !== -1) {
           state.createdRequests[indexInCreated] = updated;

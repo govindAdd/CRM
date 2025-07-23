@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getAllLeaveRequestsForApproval,
@@ -11,18 +11,24 @@ const useGetLeaveRequestsForApproval = () => {
     (state) => state.leave
   );
 
-  useEffect(() => {
+  // ✅ Memoize refetch function
+  const refetchLeaveRequests = useCallback(() => {
     dispatch(getAllLeaveRequestsForApproval());
+  }, [dispatch]);
+
+  useEffect(() => {
+    refetchLeaveRequests();
 
     return () => {
       dispatch(resetLeaveStatus());
     };
-  }, [dispatch]);
-  console.log("Leave requests: ", createdRequests);
+  }, [refetchLeaveRequests, dispatch]);
+
   return {
-    leaveRequests: createdRequests,
+    leaveRequests: createdRequests || [],
     getStatus: status,
     getError: error,
+    refetchLeaveRequests,
   };
 };
 

@@ -37,12 +37,12 @@ const SuperAdmins = lazy(() => import("../components/hrTabs/SuperAdmins"));
 const hrTabs = [
   { key: "employees", label: "Employee Records", icon: Users, Component: EmployeeRecords },
   { key: "leaves", label: "Leave Requests", icon: CalendarCheck, Component: LeaveRequests },
-  { key: "approvals", label: "Pending Approvals", icon: ClipboardCheck, Component: PendingApprovals },
-  { key: "onboarding", label: "Onboarding", icon: UserPlus, Component: OnboardingEmployees },
-  { key: "resignations", label: "Resignations", icon: LogOut, Component: Resignations },
-  { key: "notice", label: "Notice Period", icon: Hourglass, Component: NoticePeriod },
+  // { key: "approvals", label: "Pending Approvals", icon: ClipboardCheck, Component: PendingApprovals },
+  // { key: "onboarding", label: "Onboarding", icon: UserPlus, Component: OnboardingEmployees },
+  // { key: "resignations", label: "Resignations", icon: LogOut, Component: Resignations },
+  // { key: "notice", label: "Notice Period", icon: Hourglass, Component: NoticePeriod },
   { key: "active", label: "Active Employees", icon: UserCheck, Component: ActiveEmployees },
-  { key: "superadmins", label: "Superadmins", icon: ShieldCheck, Component: SuperAdmins },
+  // { key: "superadmins", label: "Superadmins", icon: ShieldCheck, Component: SuperAdmins },
 ];
 
 // ✅ FIXED: Wrap the entire button with Tippy
