@@ -723,6 +723,7 @@ const approveLeaveRequest = asyncHandler(async (req, res) => {
     new ApiResponse(200, null, `Leave request approved and added to attendance`)
   );
 });
+
 /**
  * Reject a leave request
  */
@@ -762,20 +763,6 @@ const getEmployeeLeaveHistory = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get all leave requests (optionally filtered)
- */
-const getAllLeaveRequests = asyncHandler(async (req, res) => {
-  // TODO: Implement
-});
-
-/**
- * Get all pending leave requests
- */
-const getPendingLeaveRequests = asyncHandler(async (req, res) => {
-  // TODO: Implement
-});
-
-/**
  * Get leave requests by type
  */
 const getLeaveRequestsByType = asyncHandler(async (req, res) => {
@@ -793,13 +780,6 @@ const getLeaveRequestsInDateRange = asyncHandler(async (req, res) => {
  * Get leave summary by status for an employee
  */
 const getLeaveSummaryByStatus = asyncHandler(async (req, res) => {
-  // TODO: Implement
-});
-
-/**
- * Get leave requests pending approval by a user
- */
-const getLeaveRequestsForApproval = asyncHandler(async (req, res) => {
   // TODO: Implement
 });
 
@@ -879,39 +859,7 @@ const submitResignation = asyncHandler(async (req, res) => {
     );
 });
 
-/**
- * Update resignation status
- */
-const updateResignationStatus = asyncHandler(async (req, res) => {
-  // TODO: Implement
-});
-
-/**
- * Get all resigned employees
- */
-const getResignedEmployees = asyncHandler(async (req, res) => {
-  // TODO: Implement
-});
-
-/**
- * Get all employees currently serving notice period
- */
-const getActiveNoticePeriods = asyncHandler(async (req, res) => {
-  // TODO: Implement
-});
-
 // ===================== SuperAdmin/HR Management =====================
-
-/**
- * Get all superadmin HR records
- */
-const getSuperAdmins = asyncHandler(async (req, res) => {
-  // TODO: Implement
-});
-
-/**
- * Get all active (non-deleted, non-resigned) employees
- */
 const getActiveEmployees = asyncHandler(async (req, res) => {
   let {
     page = 1,
@@ -1118,6 +1066,13 @@ const getActiveEmployees = asyncHandler(async (req, res) => {
       )
     );
 });
+/**
+ * Get all superadmin HR records
+ */
+const getSuperAdmins = asyncHandler(async (req, res) => {
+  // TODO: Implement
+});
+
 
 export {
   createHRRecord,
@@ -1135,20 +1090,14 @@ export {
   approveLeaveRequest,
   rejectLeaveRequest,
   getEmployeeLeaveHistory,
-  getAllLeaveRequests,
-  getPendingLeaveRequests,
   getLeaveRequestsByType,
   getLeaveRequestsInDateRange,
   getLeaveSummaryByStatus,
-  getLeaveRequestsForApproval,
   startOnboarding,
   updateOnboardingStatus,
   getOnboardingEmployees,
   submitResignation,
-  updateResignationStatus,
-  getResignedEmployees,
-  getActiveNoticePeriods,
   getSuperAdmins,
-  getActiveEmployees,
   getAllLeaveRequestsForApproval,
+  getActiveEmployees,
 };

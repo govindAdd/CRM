@@ -15,22 +15,16 @@ import {
   approveLeaveRequest,
   rejectLeaveRequest,
   getEmployeeLeaveHistory,
-  getAllLeaveRequests,
-  getPendingLeaveRequests,
   getLeaveRequestsByType,
   getLeaveRequestsInDateRange,
   getLeaveSummaryByStatus,
-  getLeaveRequestsForApproval,
   startOnboarding,
   updateOnboardingStatus,
   getOnboardingEmployees,
   submitResignation,
-  updateResignationStatus,
-  getResignedEmployees,
-  getActiveNoticePeriods,
   getSuperAdmins,
-  getActiveEmployees,
   getAllLeaveRequestsForApproval,
+  getActiveEmployees,
 } from "../controllers/hr.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -114,8 +108,6 @@ router.patch(
 );
 
 router.get("/:id/leave/history", verifyJWT, getEmployeeLeaveHistory);
-router.get("/leaves", verifyJWT, getAllLeaveRequests);
-router.get("/leaves/pending", verifyJWT, getPendingLeaveRequests);
 router.get("/leaves/type/:type", verifyJWT, getLeaveRequestsByType);
 router.get("/leaves/date-range", verifyJWT, getLeaveRequestsInDateRange);
 router.get("/:id/leave/summary", verifyJWT, getLeaveSummaryByStatus);
@@ -136,14 +128,7 @@ router.patch(
 router.get("/onboarding/in-progress", verifyJWT, getOnboardingEmployees);
 
 router.post("/:id/resignation", verifyJWT, submitResignation);
-router.patch(
-  "/:id/resignation/status",
-  verifyJWT,
-  roleBasedAccess("admin", "superadmin"),
-  updateResignationStatus
-);
-router.get("/resigned", verifyJWT, getResignedEmployees);
-router.get("/notice-period", verifyJWT, getActiveNoticePeriods);
+
 
 // ===================== SuperAdmin & Active Employees =====================
 router.get(
