@@ -9,7 +9,9 @@ import { STAGES } from "../models/jobApplication.model.js";
 import { ARCHIVE_REASONS } from "../models/jobApplication.model.js";
 import { REJECTION_REASONS } from "../models/jobApplication.model.js";
 import { User } from "../models/user.model.js";
-
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { generateAccessAndRefreshTokens } from "./user.controller.js";
+import Bull from "bull";
 function generateRandomPassword(fullName = "") {
   const year = new Date().getFullYear().toString().slice(-2); // '25' from 2025
   const firstName = fullName.trim().split(" ")[0] || "user";
@@ -411,6 +413,45 @@ const rollbackStage = asyncHandler(async (req, res) => {
 });
 
 // ======================= MARK CANDIDATE AS HIRED =======================
+// PATCH /api/job-applications/:id/hired
+// Body: { fullName, email, phone,
+const welcomeEmailQueue = new Bull("welcome-email-queue", {
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
+    password: process.env.REDIS_PASSWORD,
+  },
+});
+
+welcomeEmailQueue.process(async (job) => {
+  const { email, fullName, password } = job.data;
+
+  const message = `
+🎉 Welcome to Our Company!
+
+Your account has been successfully created. Here are your login details:
+
+Email: ${email}
+Temporary Password: ${password}
+
+Please log in and change your password as soon as possible for security purposes.
+
+If you have any questions or need help, feel free to contact our support team.
+
+We're excited to have you on board!
+`;
+
+  await sendEmail({
+    to: email,
+    subject: "🎉 Welcome Aboard!",
+    name: fullName,
+    text: message,
+    html: generateWelcomeEmailTemplate({ fullName, email, password }), // Optional if you're sending HTML
+  });
+
+  console.log(`✅ Welcome email sent to ${email}`);
+});
+
 const markAsHired = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const createdBy = req.user?._id;
@@ -422,35 +463,64 @@ const markAsHired = asyncHandler(async (req, res) => {
   const application = await JobApplication.findById(id);
   if (!application) throw new ApiError(404, "Job application not found");
 
-  if (application.status === "hired") {
-    throw new ApiError(400, "Candidate already marked as hired");
-  }
-  if (application.status === "not_hired") {
-    throw new ApiError(400, "Rejected candidate cannot be hired");
-  }
-
-  const { fullName, email, phone, resumeUrl } = application;
-
-  const existingUser = await User.findOne({ $or: [{ email }] });
-  if (existingUser) {
-    throw new ApiError(409, "A user with this email already exists");
+  if (["hired", "not_hired"].includes(application.status)) {
+    throw new ApiError(
+      400,
+      `Candidate already ${application.status === "hired" ? "hired" : "rejected"}`
+    );
   }
 
-  const password = generateRandomPassword(fullName);
+  const { fullName, email, phone, gender, dob, designation } = application;
 
-  const newUser = await User.create({
-    fullName,
-    email,
-    phone,
-    role: "employee",
-    password,
-    resume: resumeUrl,
-    source: "hired_from_application",
-    status: "active",
-    createdFrom: "jobApplication",
-    createdBy,
+  const trimmedEmail = email.trim().toLowerCase();
+  let username = trimmedEmail
+    .split("@")[0]
+    .replace(/[^a-z0-9]/gi, "")
+    .toLowerCase();
+
+  // Check for existing user
+  const existingUser = await User.findOne({
+    $or: [{ email: trimmedEmail }, { username }],
   });
 
+  if (existingUser) {
+    throw new ApiError(
+      409,
+      "A user with the same email or username already exists"
+    );
+  }
+
+  // Check avatar
+  const avatarPath = req.files?.avatar?.[0]?.path;
+  if (!avatarPath) throw new ApiError(400, "Avatar is required for hiring");
+
+  const avatar = await uploadOnCloudinary(avatarPath);
+  if (!avatar?.url) throw new ApiError(500, "Failed to upload avatar");
+
+  // Generate secure password
+  const password = generateRandomPassword(fullName);
+
+  // Create new user
+  const newUser = await User.create({
+    fullName,
+    email: trimmedEmail,
+    username,
+    password,
+    avatar: avatar.url,
+    phone,
+    gender,
+    dob,
+    designation,
+  });
+
+  // Generate tokens
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    newUser._id
+  );
+  newUser.refreshToken = refreshToken;
+  await newUser.save();
+
+  // Update job application
   application.status = "hired";
   application.hiredAs = newUser._id;
   application.stageHistory.push({
@@ -458,28 +528,209 @@ const markAsHired = asyncHandler(async (req, res) => {
     updatedBy: createdBy,
     notes: "[HIRED] Finalized and account created",
   });
-
   await application.save();
 
-  sendEmail({
-    to: email,
-    subject: "🎉 Welcome Aboard!",
-    name: fullName,
-    text: `Welcome to ${COMPANY_INFO.LEGAL_NAME}! Your temporary login password is: ${password}`,
-    html: generateWelcomeEmailTemplate({ fullName, email, password }),
-  }).catch((err) => console.warn("Failed to send welcome email:", err.message));
+  // 🎯 Add delayed welcome email to queue (6 days = 518400 sec)
+  await welcomeEmailQueue.add(
+    {
+      email,
+      fullName,
+      password,
+    },
+    {
+      delay: 518400 * 1000, // 6 days
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 60000, // 1 minute between retries
+      },
+    }
+  );
 
+  // Prepare safe user object
+  const safeUser = await User.findById(newUser._id).select(
+    "-password -refreshToken"
+  );
+
+  // Respond with cookie and data
   return res
+    .cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    })
     .status(200)
     .json(
       new ApiResponse(
         200,
-        { newUser, application },
+        { accessToken, user: safeUser, application },
         "Candidate hired and account created"
       )
     );
 });
 
+// ======================= MARK CANDIDATE AS Not-HIRED =======================
+// PATCH /api/job-applications/:id/not-hired
+// Body: { reason: "not_qualified" }
+const rejectionEmailQueue = new Bull("rejection-email-queue", {
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
+    password: process.env.REDIS_PASSWORD,
+  },
+});
+
+rejectionEmailQueue.process(async (job) => {
+  const { email, fullName, reason } = job.data;
+
+  const message = `
+Dear ${fullName},
+
+Thank you for taking the time to apply and interview with us.
+
+After careful consideration, we regret to inform you that you have not been selected for the role.
+
+Reason (if shared): ${reason || "Not specified"}
+
+We appreciate your interest and encourage you to apply again in the future.
+
+Best regards,  
+HR Team`;
+
+  await sendEmail({
+    to: email,
+    subject: "Application Update – Thank You",
+    name: fullName,
+    text: message,
+  });
+
+  console.log(`📨 Rejection email sent to ${email}`);
+});
+const markAsNotHired = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const reviewerId = req.user?._id;
+
+  if (!isValidObjectId(id)) {
+    throw new ApiError(400, "Invalid job application ID");
+  }
+
+  const application = await JobApplication.findById(id);
+  if (!application) {
+    throw new ApiError(404, "Job application not found");
+  }
+
+  if (application.status === "not_hired") {
+    throw new ApiError(400, "Candidate already marked as not hired");
+  }
+
+  if (application.status === "hired") {
+    throw new ApiError(400, "Cannot reject a hired candidate");
+  }
+
+  application.status = "not_hired";
+  application.rejection = {
+    reason: reason || "Candidate not selected",
+    rejectedBy: reviewerId,
+    rejectedAt: new Date(),
+  };
+
+  application.stageHistory.push({
+    stage: application.currentStage,
+    updatedBy: reviewerId,
+    notes: `[NOT HIRED] ${reason || "Candidate rejected without a specific reason"}`,
+  });
+
+  await application.save();
+  // 🎯 Add delayed Reject email to queue (1 days = 518400 sec)
+  await rejectionEmailQueue.add(
+    {
+      email: application.email,
+      fullName: application.fullName,
+      reason,
+    },
+    {
+      delay: 86400 * 1000, // 1 day
+      attempts: 2,
+      backoff: {
+        type: "exponential",
+        delay: 60000,
+      },
+    }
+  );
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, application, "Candidate marked as not hired"));
+});
+// ======================= ADD EVALUATION AND RATING =======================
+// PATCH /api/job-applications/:id/evaluation
+// Body: { stage: "face_to_face", rating: 4, feedback: "
+const addEvaluationAndRating = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { stage, rating, feedback } = req.body;
+  const userId = req.user?._id;
+
+  if (!isValidObjectId(id)) {
+    throw new ApiError(400, "Invalid job application ID");
+  }
+
+  if (!stage || typeof rating !== "number" || !feedback) {
+    throw new ApiError(400, "stage, rating (number), and feedback are required");
+  }
+
+  const application = await JobApplication.findById(id);
+  if (!application) {
+    throw new ApiError(404, "Job application not found");
+  }
+
+  application.evaluations.push({
+    stage,
+    rating,
+    feedback,
+    evaluatedBy: userId,
+    evaluatedAt: new Date(),
+  });
+
+  await application.save();
+
+  return res.status(200).json(
+    new ApiResponse(200, application, "Evaluation and rating added successfully")
+  );
+});
+// ======================= ARCHIVE APPLICATION =======================
+// PATCH /api/job-applications/:id/archive
+const archiveApplication = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { archiveReason } = req.body;
+
+  if (!isValidObjectId(id)) {
+    throw new ApiError(400, "Invalid application ID");
+  }
+
+  if (!archiveReason || !ARCHIVE_REASONS.includes(archiveReason)) {
+    throw new ApiError(400, "Invalid or missing archiveReason");
+  }
+
+  const application = await JobApplication.findById(id);
+  if (!application) {
+    throw new ApiError(404, "Job application not found");
+  }
+
+  if (application.archived) {
+    throw new ApiError(409, "Application is already archived");
+  }
+
+  application.archived = true;
+  application.archiveReason = archiveReason;
+
+  await application.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, application, "Application archived successfully"));
+});
 export {
   createJobApplication,
   checkDuplicateApplication,
@@ -488,4 +739,7 @@ export {
   rejectAtStage,
   rollbackStage,
   markAsHired,
+  markAsNotHired,
+  addEvaluationAndRating,
+  archiveApplication
 };

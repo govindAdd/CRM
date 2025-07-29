@@ -589,5 +589,6 @@ export {
   getCurrentUser,
   deleteUser,
   getUserDepartment,
-  refreshAccessToken
+  refreshAccessToken,
+  generateAccessAndRefreshTokens
 };

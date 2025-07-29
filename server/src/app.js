@@ -40,7 +40,10 @@ app.use("/api/v1/attendance", attendanceRouter);
 import hrRoutes from "./routes/hr.routes.js";
 // route declearation
 app.use("/api/v1/hr", hrRoutes);
-
+// route import for job application
+import jobApplicationRoute from "./routes/jobApplication.route.js";
+// route declearation
+app.use("/api/v1/job-applications", jobApplicationRoute);
 import companyRoutes from "./routes/company.route.js";
 // route declearation
 app.use("/api/v1", companyRoutes);

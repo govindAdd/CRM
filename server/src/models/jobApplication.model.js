@@ -1,5 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import { isEmail } from "validator";
+import validator from "validator";
+
+const { isEmail } = validator;
 
 // ========== ENUMS ==========
 const SOURCES = [
