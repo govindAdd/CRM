@@ -731,6 +731,197 @@ const archiveApplication = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, application, "Application archived successfully"));
 });
+
+// ======================= UNARCHIVE APPLICATION =======================
+// PATCH /api/job-applications/:id/unarchive
+const unarchiveApplication = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Validate ObjectId
+  if (!isValidObjectId(id)) {
+    throw new ApiError(400, "Invalid job application ID");
+  }
+
+  // Find the job application
+  const application = await JobApplication.findById(id);
+  if (!application) {
+    throw new ApiError(404, "Job application not found");
+  }
+
+  // Already active
+  if (!application.archived) {
+    throw new ApiError(409, "Application is already active");
+  }
+
+  // Unarchive
+  application.archived = false;
+  application.archiveReason = undefined;
+
+  await application.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, application, "Application unarchived successfully"));
+});
+
+// ======================= BLOCK CANDIDATE =======================
+// PATCH /api/job-applications/:id/block
+const blockCandidate = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { reason = "other" } = req.body;
+
+  if (!isValidObjectId(id)) {
+    throw new ApiError(400, "Invalid job application ID");
+  }
+
+  if (!["merged_with_original", "other"].includes(reason)) {
+    throw new ApiError(400, "Invalid archive reason for blocking");
+  }
+
+  const application = await JobApplication.findById(id);
+  if (!application) {
+    throw new ApiError(404, "Job application not found");
+  }
+
+  if (application.archived && application.tags.includes("blocked")) {
+    throw new ApiError(409, "Candidate is already blocked");
+  }
+
+  // Update fields
+  application.status = "not_hired";
+  application.archived = true;
+  application.archiveReason = reason;
+  if (!application.tags.includes("blocked")) {
+    application.tags.push("blocked");
+  }
+
+  await application.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, application, "Candidate has been blocked successfully"));
+});
+// ======================= UNBLOCK CANDIDATE =======================
+// PATCH /api/job-applications/:id/unblock
+const unblockCandidate = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!isValidObjectId(id)) {
+    throw new ApiError(400, "Invalid job application ID");
+  }
+
+  const application = await JobApplication.findById(id);
+  if (!application) {
+    throw new ApiError(404, "Job application not found");
+  }
+
+  if (!application.archived || !application.tags.includes("blocked")) {
+    throw new ApiError(400, "Candidate is not blocked or already active");
+  }
+
+  // Revert changes
+  application.status = "active";
+  application.archived = false;
+  application.archiveReason = undefined;
+  application.tags = application.tags.filter(tag => tag !== "blocked");
+
+  await application.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, application, "Candidate has been unblocked successfully"));
+});
+
+// ======================= SEARCH JOB APPLICATIONS =======================
+// GET /api/job-applications/search?q=&id=&stage=&status=&rejectionReason=&archived=true&page=1&limit=20
+const searchJobApplications = asyncHandler(async (req, res) => {
+  const {
+    q,
+    id,
+    stage,
+    status,
+    rejectionReason,
+    archived,
+    page = 1,
+    limit = 20,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = req.query;
+
+  const query = {};
+
+  // ========== Search by ID ==========
+  if (id) {
+    if (!isValidObjectId(id)) {
+      throw new ApiError(400, "Invalid ID");
+    }
+
+    const application = await JobApplication.findById(id);
+    if (!application) {
+      throw new ApiError(404, "No application found with this ID");
+    }
+
+    return res.status(200).json(
+      new ApiResponse(200, [application], "Application found by ID")
+    );
+  }
+
+  // ========== Smart Search ==========
+  if (q) {
+    query.$or = [
+      { fullName: new RegExp(q, "i") },
+      { email: new RegExp(q, "i") },
+      { phone: new RegExp(q) },
+      { tags: { $in: [q] } },
+    ];
+  }
+
+  // ========== Filters ==========
+  if (stage) {
+    query.currentStage = stage;
+  }
+
+  if (status) {
+    query.status = status;
+  }
+
+  if (rejectionReason) {
+    query.rejectionReason = rejectionReason;
+  }
+
+  if (archived !== undefined) {
+    query.archived = archived === "true";
+  }
+
+  // ========== Pagination & Sorting ==========
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const sortDirection = sortOrder === "asc" ? 1 : -1;
+
+  // ========== Query Execution ==========
+  const [applications, total] = await Promise.all([
+    JobApplication.find(query)
+      .sort({ [sortBy]: sortDirection })
+      .skip(skip)
+      .limit(parseInt(limit)),
+    JobApplication.countDocuments(query),
+  ]);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        total,
+        page: parseInt(page),
+        pageSize: parseInt(limit),
+        applications,
+      },
+      q || stage || status || rejectionReason || archived !== undefined
+        ? "Filtered applications retrieved"
+        : "All applications retrieved"
+    )
+  );
+});
+
 export {
   createJobApplication,
   checkDuplicateApplication,
@@ -741,5 +932,9 @@ export {
   markAsHired,
   markAsNotHired,
   addEvaluationAndRating,
-  archiveApplication
+  archiveApplication,
+  unarchiveApplication,
+  blockCandidate,
+  unblockCandidate,
+  searchJobApplications,
 };
