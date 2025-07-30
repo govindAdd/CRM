@@ -44,6 +44,7 @@ app.use("/api/v1/hr", hrRoutes);
 import jobApplicationRoute from "./routes/jobApplication.route.js";
 // route declearation
 app.use("/api/v1/job-applications", jobApplicationRoute);
+
 import companyRoutes from "./routes/company.route.js";
 // route declearation
 app.use("/api/v1", companyRoutes);

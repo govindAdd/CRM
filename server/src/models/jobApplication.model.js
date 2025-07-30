@@ -166,7 +166,6 @@ const jobApplicationSchema = new Schema(
     membership: {
       type: Schema.Types.ObjectId,
       ref: "Membership",
-      required: true,
     },
 
     createdBy: {

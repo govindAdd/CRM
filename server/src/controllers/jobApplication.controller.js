@@ -3,15 +3,15 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { JobApplication } from "../models/jobApplication.model.js";
-import { Membership } from "../models/membership.model.js";
-import { Department } from "../models/department.model.js";
 import { STAGES } from "../models/jobApplication.model.js";
 import { ARCHIVE_REASONS } from "../models/jobApplication.model.js";
 import { REJECTION_REASONS } from "../models/jobApplication.model.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { generateAccessAndRefreshTokens } from "./user.controller.js";
-import Bull from "bull";
+import XLSX from "xlsx";
+import { welcomeEmailQueue, rejectionEmailQueue } from "../utils/emailQueue.js";
+import { sendEmail } from "../utils/sendEmail.js";
 function generateRandomPassword(fullName = "") {
   const year = new Date().getFullYear().toString().slice(-2); // '25' from 2025
   const firstName = fullName.trim().split(" ")[0] || "user";
@@ -83,54 +83,23 @@ const generateWelcomeEmailTemplate = ({ fullName, email, password }) => `
 // chatGPT uri https://chatgpt.com/s/t_6885dc6c5710819188b35e078acffa0c
 // POST /api/job-applications
 const createJobApplication = asyncHandler(async (req, res) => {
-  const {
-    fullName,
-    email,
-    phone,
-    location,
-    resumeUrl,
-    source = "other",
-    department,
-    membership,
-  } = req.body;
+  const { fullName, email, phone, location, source = "other" } = req.body;
 
   const createdBy = req.user?._id;
+  const resumePath = req.files?.resumeUrl?.[0]?.path;
 
   // Validate fields
-  if (
-    !fullName ||
-    !email ||
-    !phone ||
-    !resumeUrl ||
-    !membership ||
-    !createdBy
-  ) {
-    throw new ApiError(400, "Missing required fields");
+  if ([fullName, email, phone, resumePath].some((f) => !f?.toString().trim())) {
+    throw new ApiError(400, "Required fields missing");
   }
 
-  if (!isValidObjectId(membership)) {
-    throw new ApiError(400, "Invalid membership ID");
+  // Upload resume to cloud
+  const resume = await uploadOnCloudinary(resumePath);
+  if (!resume?.url) {
+    throw new ApiError(400, "Resume upload failed");
   }
 
-  if (department && !isValidObjectId(department)) {
-    throw new ApiError(400, "Invalid department ID");
-  }
-
-  // Check if membership exists
-  const membershipDoc = await Membership.findById(membership);
-  if (!membershipDoc) {
-    throw new ApiError(404, "Membership not found");
-  }
-
-  // Optional: check department
-  if (department) {
-    const dept = await Department.findById(department);
-    if (!dept) {
-      throw new ApiError(404, "Department not found");
-    }
-  }
-
-  // Check for duplicate application
+  // Check duplicates
   const existing = await JobApplication.findOne({
     $or: [
       { email: new RegExp(`^${email}$`, "i") },
@@ -139,16 +108,13 @@ const createJobApplication = asyncHandler(async (req, res) => {
   });
 
   if (existing) {
-    // Archive this incoming duplicate record
     await JobApplication.create({
       fullName,
       email,
       phone,
       location,
-      resumeUrl,
+      resumeUrl: resume.url,
       source,
-      membership,
-      department,
       createdBy,
       archived: true,
       archiveReason: "duplicate_profile",
@@ -166,16 +132,14 @@ const createJobApplication = asyncHandler(async (req, res) => {
       );
   }
 
-  // Create a fresh application
-  const application = await JobApplication.create({
+  // Create new application
+  const newApplication = await JobApplication.create({
     fullName,
     email,
     phone,
     location,
-    resumeUrl,
+    resumeUrl: resume.url,
     source,
-    membership,
-    department,
     createdBy,
     currentStage: "application_review",
     stageHistory: [
@@ -190,7 +154,11 @@ const createJobApplication = asyncHandler(async (req, res) => {
   return res
     .status(201)
     .json(
-      new ApiResponse(201, application, "Job application created successfully")
+      new ApiResponse(
+        201,
+        newApplication,
+        "Job application created successfully"
+      )
     );
 });
 
@@ -321,10 +289,6 @@ const rejectAtStage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Cannot reject a hired candidate");
   }
 
-  if (application.status === "not_hired") {
-    throw new ApiError(400, "Candidate is already rejected");
-  }
-
   const currentStage = application.currentStage;
   const archiveReason = ARCHIVE_REASONS[currentStage] || "other";
 
@@ -415,43 +379,6 @@ const rollbackStage = asyncHandler(async (req, res) => {
 // ======================= MARK CANDIDATE AS HIRED =======================
 // PATCH /api/job-applications/:id/hired
 // Body: { fullName, email, phone,
-const welcomeEmailQueue = new Bull("welcome-email-queue", {
-  redis: {
-    host: process.env.REDIS_HOST,
-    port: process.env.REDIS_PORT,
-    password: process.env.REDIS_PASSWORD,
-  },
-});
-
-welcomeEmailQueue.process(async (job) => {
-  const { email, fullName, password } = job.data;
-
-  const message = `
-🎉 Welcome to Our Company!
-
-Your account has been successfully created. Here are your login details:
-
-Email: ${email}
-Temporary Password: ${password}
-
-Please log in and change your password as soon as possible for security purposes.
-
-If you have any questions or need help, feel free to contact our support team.
-
-We're excited to have you on board!
-`;
-
-  await sendEmail({
-    to: email,
-    subject: "🎉 Welcome Aboard!",
-    name: fullName,
-    text: message,
-    html: generateWelcomeEmailTemplate({ fullName, email, password }), // Optional if you're sending HTML
-  });
-
-  console.log(`✅ Welcome email sent to ${email}`);
-});
-
 const markAsHired = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const createdBy = req.user?._id;
@@ -463,11 +390,8 @@ const markAsHired = asyncHandler(async (req, res) => {
   const application = await JobApplication.findById(id);
   if (!application) throw new ApiError(404, "Job application not found");
 
-  if (["hired", "not_hired"].includes(application.status)) {
-    throw new ApiError(
-      400,
-      `Candidate already ${application.status === "hired" ? "hired" : "rejected"}`
-    );
+  if (application.status === "hired") {
+    throw new ApiError(400, "Candidate already hired");
   }
 
   const { fullName, email, phone, gender, dob, designation } = application;
@@ -529,21 +453,55 @@ const markAsHired = asyncHandler(async (req, res) => {
     notes: "[HIRED] Finalized and account created",
   });
   await application.save();
-
   // 🎯 Add delayed welcome email to queue (6 days = 518400 sec)
+  welcomeEmailQueue.process(async (job) => {
+    const { email, fullName, password } = job.data;
+    const resetURL = `${process.env.CORS_ORIGIN}/forgot-password`;
+    const btnName = "Forget Password";
+    
+    const plainTextMessage = `
+🎉 Welcome to Our Company!
+
+Hi ${fullName},
+
+Your account has been successfully created. Here are your login details:
+
+Email: ${email}
+Temporary Password: ${password}
+
+Please log in and change your password as soon as possible for security reasons.
+
+We're excited to have you on board!
+
+- HR Team
+  `;
+
+    try {
+      await sendEmail({
+        to: email,
+        subject: "🎉 Welcome Aboard!",
+        name: fullName,
+        text: plainTextMessage,
+        resetUrl: resetURL,
+        btnName,
+      });
+
+      console.log(`✅ Welcome email sent to ${email}`);
+    } catch (err) {
+      console.error("❌ Failed to send welcome email:", err);
+    }
+  });
   await welcomeEmailQueue.add(
+    { email, fullName, password },
     {
-      email,
-      fullName,
-      password,
-    },
-    {
-      delay: 518400 * 1000, // 6 days
-      attempts: 3,
+      delay: 0,
+      attempts: 2,
       backoff: {
         type: "exponential",
-        delay: 60000, // 1 minute between retries
+        delay: 60000,
       },
+      removeOnComplete: true,
+      removeOnFail: false,
     }
   );
 
@@ -573,40 +531,6 @@ const markAsHired = asyncHandler(async (req, res) => {
 // ======================= MARK CANDIDATE AS Not-HIRED =======================
 // PATCH /api/job-applications/:id/not-hired
 // Body: { reason: "not_qualified" }
-const rejectionEmailQueue = new Bull("rejection-email-queue", {
-  redis: {
-    host: process.env.REDIS_HOST,
-    port: process.env.REDIS_PORT,
-    password: process.env.REDIS_PASSWORD,
-  },
-});
-
-rejectionEmailQueue.process(async (job) => {
-  const { email, fullName, reason } = job.data;
-
-  const message = `
-Dear ${fullName},
-
-Thank you for taking the time to apply and interview with us.
-
-After careful consideration, we regret to inform you that you have not been selected for the role.
-
-Reason (if shared): ${reason || "Not specified"}
-
-We appreciate your interest and encourage you to apply again in the future.
-
-Best regards,  
-HR Team`;
-
-  await sendEmail({
-    to: email,
-    subject: "Application Update – Thank You",
-    name: fullName,
-    text: message,
-  });
-
-  console.log(`📨 Rejection email sent to ${email}`);
-});
 const markAsNotHired = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
@@ -644,6 +568,37 @@ const markAsNotHired = asyncHandler(async (req, res) => {
 
   await application.save();
   // 🎯 Add delayed Reject email to queue (1 days = 518400 sec)
+  rejectionEmailQueue.process(async (job) => {
+    const { email, fullName, reason } = job.data;
+
+    const message = `
+Dear ${fullName},
+
+Thank you for taking the time to apply and interview with us.
+
+After careful consideration, we regret to inform you that you have not been selected for the role.
+
+Reason (if shared): ${reason || "Not specified"}
+
+We appreciate your interest and encourage you to apply again in the future.
+
+Best regards,  
+HR Team
+`;
+
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Application Update - Thank You",
+        name: fullName,
+        text: message,
+      });
+
+      console.log(`📨 Rejection email sent to ${email}`);
+    } catch (err) {
+      console.error("❌ Failed to send rejection email to", email, err);
+    }
+  });
   await rejectionEmailQueue.add(
     {
       email: application.email,
@@ -677,7 +632,10 @@ const addEvaluationAndRating = asyncHandler(async (req, res) => {
   }
 
   if (!stage || typeof rating !== "number" || !feedback) {
-    throw new ApiError(400, "stage, rating (number), and feedback are required");
+    throw new ApiError(
+      400,
+      "stage, rating (number), and feedback are required"
+    );
   }
 
   const application = await JobApplication.findById(id);
@@ -695,9 +653,15 @@ const addEvaluationAndRating = asyncHandler(async (req, res) => {
 
   await application.save();
 
-  return res.status(200).json(
-    new ApiResponse(200, application, "Evaluation and rating added successfully")
-  );
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        application,
+        "Evaluation and rating added successfully"
+      )
+    );
 });
 // ======================= ARCHIVE APPLICATION =======================
 // PATCH /api/job-applications/:id/archive
@@ -729,7 +693,9 @@ const archiveApplication = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, application, "Application archived successfully"));
+    .json(
+      new ApiResponse(200, application, "Application archived successfully")
+    );
 });
 
 // ======================= UNARCHIVE APPLICATION =======================
@@ -761,7 +727,9 @@ const unarchiveApplication = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, application, "Application unarchived successfully"));
+    .json(
+      new ApiResponse(200, application, "Application unarchived successfully")
+    );
 });
 
 // ======================= BLOCK CANDIDATE =======================
@@ -799,7 +767,13 @@ const blockCandidate = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, application, "Candidate has been blocked successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        application,
+        "Candidate has been blocked successfully"
+      )
+    );
 });
 // ======================= UNBLOCK CANDIDATE =======================
 // PATCH /api/job-applications/:id/unblock
@@ -823,13 +797,19 @@ const unblockCandidate = asyncHandler(async (req, res) => {
   application.status = "active";
   application.archived = false;
   application.archiveReason = undefined;
-  application.tags = application.tags.filter(tag => tag !== "blocked");
+  application.tags = application.tags.filter((tag) => tag !== "blocked");
 
   await application.save();
 
   return res
     .status(200)
-    .json(new ApiResponse(200, application, "Candidate has been unblocked successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        application,
+        "Candidate has been unblocked successfully"
+      )
+    );
 });
 
 // ======================= SEARCH JOB APPLICATIONS =======================
@@ -846,76 +826,140 @@ const searchJobApplications = asyncHandler(async (req, res) => {
     limit = 20,
     sortBy = "createdAt",
     sortOrder = "desc",
+    export: exportType,
   } = req.query;
 
-  const query = {};
-
-  // ========== Search by ID ==========
-  if (id) {
-    if (!isValidObjectId(id)) {
-      throw new ApiError(400, "Invalid ID");
-    }
-
-    const application = await JobApplication.findById(id);
-    if (!application) {
-      throw new ApiError(404, "No application found with this ID");
-    }
-
-    return res.status(200).json(
-      new ApiResponse(200, [application], "Application found by ID")
-    );
-  }
-
-  // ========== Smart Search ==========
-  if (q) {
-    query.$or = [
-      { fullName: new RegExp(q, "i") },
-      { email: new RegExp(q, "i") },
-      { phone: new RegExp(q) },
-      { tags: { $in: [q] } },
-    ];
-  }
-
-  // ========== Filters ==========
-  if (stage) {
-    query.currentStage = stage;
-  }
-
-  if (status) {
-    query.status = status;
-  }
-
-  if (rejectionReason) {
-    query.rejectionReason = rejectionReason;
-  }
-
-  if (archived !== undefined) {
-    query.archived = archived === "true";
-  }
-
-  // ========== Pagination & Sorting ==========
-  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const pageNum = Math.max(parseInt(page) || 1, 1);
+  const limitNum = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
+  const skip = (pageNum - 1) * limitNum;
   const sortDirection = sortOrder === "asc" ? 1 : -1;
 
-  // ========== Query Execution ==========
-  const [applications, total] = await Promise.all([
-    JobApplication.find(query)
-      .sort({ [sortBy]: sortDirection })
-      .skip(skip)
-      .limit(parseInt(limit)),
-    JobApplication.countDocuments(query),
-  ]);
+  const allowedSortFields = ["createdAt", "fullName", "email", "status"];
+  const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : "createdAt";
+
+  // ========== Direct Search by ID ==========
+  if (id) {
+    if (!isValidObjectId(id))
+      throw new ApiError(400, "Invalid Job Application ID");
+
+    const application = await JobApplication.findById(id);
+    if (!application)
+      throw new ApiError(404, "No job application found with this ID");
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, [application], "Application found by ID"));
+  }
+
+  // ========== Match Stage Builder ==========
+  const buildMatchStage = () => {
+    const match = {};
+
+    if (q?.trim()) {
+      const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const safeQ = escapeRegex(q.trim());
+
+      match.$or = [
+        { fullName: { $regex: `^${safeQ}`, $options: "i" } },
+        { email: { $regex: safeQ, $options: "i" } },
+        { phone: { $regex: safeQ } },
+        { tags: { $elemMatch: { $regex: safeQ, $options: "i" } } },
+      ];
+    }
+
+    if (stage) match.currentStage = stage;
+    if (status) match.status = status;
+    if (rejectionReason) match.rejectionReason = rejectionReason;
+    if (archived !== undefined) match.archived = archived === "true";
+
+    return match;
+  };
+
+  const matchStage = buildMatchStage();
+
+  // ========== Excel Export ==========
+  if (exportType === "excel") {
+    // Optional: Authorization check for export
+    // if (!req.user?.isAdmin) throw new ApiError(403, "Unauthorized export");
+
+    const applications = await JobApplication.find(matchStage)
+      .sort({ [safeSortBy]: sortDirection })
+      .lean();
+
+    if (applications.length === 0) {
+      throw new ApiError(404, "No applications found to export");
+    }
+
+    const data = applications.map((app) => ({
+      FullName: app.fullName,
+      Email: app.email,
+      Phone: app.phone,
+      Stage: app.currentStage,
+      Status: app.status,
+      RejectionReason: app.rejectionReason || "-",
+      Archived: app.archived ? "Yes" : "No",
+      AppliedAt: new Date(app.createdAt).toLocaleString(),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Applications");
+
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=applications.xlsx"
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    return res.send(buffer);
+  }
+
+  // ========== Aggregation Pipeline ==========
+  const pipeline = [
+    { $match: matchStage },
+    {
+      $facet: {
+        applications: [
+          { $sort: { [safeSortBy]: sortDirection } },
+          { $skip: skip },
+          { $limit: limitNum },
+        ],
+        total: [{ $count: "count" }],
+        byStage: [
+          { $group: { _id: "$currentStage", count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ],
+      },
+    },
+    {
+      $project: {
+        applications: 1,
+        total: { $ifNull: [{ $arrayElemAt: ["$total.count", 0] }, 0] },
+        byStage: 1,
+      },
+    },
+  ];
+
+  const [result] = await JobApplication.aggregate(pipeline);
 
   return res.status(200).json(
     new ApiResponse(
       200,
       {
-        total,
-        page: parseInt(page),
-        pageSize: parseInt(limit),
-        applications,
+        total: result.total,
+        page: pageNum,
+        pageSize: limitNum,
+        totalPages: Math.ceil(result.total / limitNum),
+        hasNextPage: pageNum * limitNum < result.total,
+        hasPrevPage: pageNum > 1,
+        applications: result.applications,
+        stageStats: result.byStage,
       },
-      q || stage || status || rejectionReason || archived !== undefined
+      q || stage || status || rejectionReason || typeof archived !== "undefined"
         ? "Filtered applications retrieved"
         : "All applications retrieved"
     )

@@ -32,14 +32,14 @@ const sendEmail = async (options) => {
   <div style="padding:30px;">
     <h2 style="color:#333;margin-top:0;">Hi ${options.name || "there"},</h2>
     <p style="font-size:15px;line-height:1.6;">
-      We received a request to reset your password. If this was you, click the button below to create a new one.
+      ${options.text || "You requested a password reset. Click the button below to reset your password."}
     </p>
 
     <div style="text-align:center;margin:30px 0;">
       <a href="${options.resetUrl}" 
          style="background:#6c5ce7;color:#fff;padding:12px 24px;border-radius:6px;
          font-size:16px;text-decoration:none;display:inline-block;font-weight:bold;">
-        Reset Password
+         ${options.btnName || "Reset Password"}
       </a>
     </div>
 
@@ -51,7 +51,7 @@ const sendEmail = async (options) => {
     </p>
 
     <p style="font-size:14px;margin-top:20px;">
-      This link will expire in <strong>${options.expireTime || "5 minutes"}</strong>.
+      This link will expire in <strong>${options.expireTime || "2 days"}</strong>.
     </p>
 
     <p style="font-size:14px;color:#555;margin-top:30px;">
