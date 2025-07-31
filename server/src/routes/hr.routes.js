@@ -85,7 +85,7 @@ router.get(
 );
 
 // ===================== Leave Management =====================
-router.post("/:id/leave", verifyJWT, createLeaveRequest); // done
+router.post("/:id/leave", verifyJWT, createLeaveRequest);
 router.put("/:id/leave/:leaveIndex", verifyJWT, updateLeaveRequest);
 router.delete("/:id/leave/:leaveIndex", verifyJWT, deleteLeaveRequest);
 router.patch(

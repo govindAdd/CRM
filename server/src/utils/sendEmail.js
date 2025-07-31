@@ -9,7 +9,6 @@ const sendEmail = async (options) => {
       pass: process.env.SMTP_PASSWORD,
     },
   });
-
   const mailOptions = {
     from: `"${COMPANY_INFO.LEGAL_NAME}" <${process.env.SMTP_MAIL}>`,
     to: options.to,
@@ -21,9 +20,10 @@ const sendEmail = async (options) => {
 <div style="max-width:600px;margin:auto;font-family:'Segoe UI',Roboto,sans-serif;color:#333;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);overflow:hidden;">
   <!-- Header -->
   <div style="background:linear-gradient(135deg,#ffffff,#f3f4f6);padding:30px;text-align:center;border-bottom:1px solid #e5e7eb;">
-    <div style="background-color:#fff;padding:10px;border-radius:12px;display:inline-block;">
-      <img src="${COMPANY_INFO.LOGO_URL}" alt="${COMPANY_INFO.LEGAL_NAME}" style="height:65px;margin-bottom:10px;border-radius:50%;" />
-    </div>
+  <div style="background-color:#fff;padding:10px;border-radius:12px;display:inline-block;">
+    <img src="${COMPANY_INFO.LOGO_URL}" alt="${COMPANY_INFO.LEGAL_NAME}" style="height:65px;margin-bottom:10px;border-radius:50%;" />
+  </div>
+  ${console.log(COMPANY_INFO.LOGO_URL)}
     <h1 style="margin:10px 0 0;color:#111;font-size:24px;">${COMPANY_INFO.LEGAL_NAME}</h1>
     <p style="font-size:14px;color:#666;margin-top:4px;">${COMPANY_INFO.TAGLINE}</p>
   </div>

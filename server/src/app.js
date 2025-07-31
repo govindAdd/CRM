@@ -1,7 +1,8 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 // CORS config
@@ -52,7 +53,12 @@ app.use("/api/v1", companyRoutes);
 
 
 
-
+// Static assets
+// ESM-safe __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// Serve static files from /src/assets
+app.use("/assets", express.static(path.join(__dirname, "src/assets")));
 
 // Google
 import session from "express-session";

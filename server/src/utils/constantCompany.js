@@ -1,3 +1,4 @@
+//import {companyLogo} from "../assets/image/logoNew.png"
 export const COMPANY_INFO = Object.freeze({
   NAME: "ADD-GOD",
   LEGAL_NAME: "ADD-GOD Digital Pvt. Ltd.",
@@ -46,11 +47,12 @@ Whether you're a startup, local business, or an established brand, our creative 
     COUNTRY: "India",
   },
 
-  LOGO_URL: "/assets/image/logoNew.png",
+  LOGO_URL: `http://localhost:${process.env.PORT}/assets/image/logoNew.png`,
+
 
   VIDEO_ASSETS: {
-    INTRO_ANIMATION: "/assets/videos/newLogoAnimation.mp4",
-    INTRO_ANIMATION_SMALL: "/assets/videos/newLogoAnimationSmall.mp4",
+    INTRO_ANIMATION: `http://localhost:${process.env.PORT}/assets/videos/newLogoAnimation.mp4`,
+    INTRO_ANIMATION_SMALL: `http://localhost:${process.env.PORT}/assets/videos/newLogoAnimationSmall.mp4`,
   },
 
   COPYRIGHT: `© ${new Date().getFullYear()} ADD-GOD. All rights reserved.`,

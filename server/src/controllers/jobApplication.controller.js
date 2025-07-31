@@ -458,24 +458,21 @@ const markAsHired = asyncHandler(async (req, res) => {
     const { email, fullName, password } = job.data;
     const resetURL = `${process.env.CORS_ORIGIN}/forgot-password`;
     const btnName = "Forget Password";
-    
     const plainTextMessage = `
-🎉 Welcome to Our Company!
-
-Hi ${fullName},
-
-Your account has been successfully created. Here are your login details:
-
-Email: ${email}
-Temporary Password: ${password}
-
-Please log in and change your password as soon as possible for security reasons.
-
-We're excited to have you on board!
-
-- HR Team
+      <p>🎉 <strong>Welcome to Our Company!</strong></p>
+      <p>
+        Your account has been successfully created. Here are your login details:
+      </p>
+      <ul>
+        <li><strong>Email:</strong> <a href="mailto:${email}">${email}</a></li>
+        <li><strong>Temporary Password:</strong> ${password}</li>
+      </ul>
+      <p>
+        Please log in and <strong>change your password</strong> as soon as possible for security reasons.
+      </p>
+      <p>We're excited to have you on board!</p>
+      <p>- HR Team</p>
   `;
-
     try {
       await sendEmail({
         to: email,
@@ -495,6 +492,7 @@ We're excited to have you on board!
     { email, fullName, password },
     {
       delay: 0,
+      //delay: 6 * 24 * 60 * 60 * 1000,
       attempts: 2,
       backoff: {
         type: "exponential",
