@@ -12,7 +12,7 @@ const Layout = ({ children }) => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  // ESC to close
+  // ESC key to close sidebar
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === "Escape") setSidebarOpen(false);
@@ -23,7 +23,7 @@ const Layout = ({ children }) => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-zinc-950 text-zinc-900 dark:text-white">
-      {/* Transparent Overlay on Mobile */}
+      {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-30 bg-transparent md:hidden"
@@ -52,7 +52,7 @@ const Layout = ({ children }) => {
             <FiMenu className="text-2xl" />
           </button>
           <h1 className="text-lg font-semibold">Dashboard</h1>
-          <div className="w-6" /> {/* spacer */}
+          <div className="w-6" />
         </div>
 
         {/* Page Content */}

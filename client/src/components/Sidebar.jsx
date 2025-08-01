@@ -21,7 +21,7 @@ const navItems = [
   { label: "Attendance", icon: FaClock, path: "/attendance" },
   { label: "After Sales", icon: FaTools, path: "/aftersales", role: ["superadmin", "admin", "manager", "hr", "support"] },
   { label: "Data Mining", icon: FaChartLine, path: "/datamining", role: ["superadmin", "admin", "manager", "hr", "analyst"] },
-  { label: "Job Application", icon: FaBriefcase, path: "/jobapplication", role: ["superadmin", "admin", "manager", "hr"] },
+  { label: "Job Application", icon: FaBriefcase, path: "/hire", role: ["superadmin", "admin", "manager", "hr"] },
   { label: "Sales", icon: FaChartLine, path: "/sales", role: ["superadmin", "admin", "manager", "sales"] },
   { label: "Training", icon: FaChalkboardTeacher, path: "/training", role: ["superadmin", "admin", "manager", "hr", "trainer"] },
   { label: "Telecom", icon: FaPhoneAlt, path: "/telecom", role: ["superadmin", "admin", "manager", "hr"] },

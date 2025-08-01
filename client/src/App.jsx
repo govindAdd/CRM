@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import Department from "./pages/Department";
 import AttendancePage from "./pages/AttendancePage";
 import HrPage from "./pages/HrPage";
+import JobApplicationPage from "./pages/JobApplicationPage";
 import AuthInitializer from "./components/AuthInitializer";
 
 import "./App.css";
@@ -63,6 +64,14 @@ function App() {
           element={
             <PrivateRoute>
               <HrPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/hire"
+          element={
+            <PrivateRoute>
+              <JobApplicationPage />
             </PrivateRoute>
           }
         />

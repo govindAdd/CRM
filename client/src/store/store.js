@@ -6,6 +6,7 @@ import { departmentReducer, departmentEmployeesReducer } from './departmentSlice
 import attendanceReducer from './attendanceSlice';
 import hrReducer from './hrSlice';
 import leaveReducer from './leaveSlice';
+import jobApplicationReducer from './jobApplicationSlice';
 
 export const store = configureStore({
   reducer: {
@@ -17,6 +18,7 @@ export const store = configureStore({
     attendance: attendanceReducer,
     hr: hrReducer,
     leave: leaveReducer,
+    jobApplication: jobApplicationReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
