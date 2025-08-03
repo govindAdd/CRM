@@ -26,5 +26,13 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: ["@babylonjs/core", "@babylonjs/loaders"],
     },
+    build: {
+      outDir: "dist",
+    },
+    resolve: {
+      alias: {
+        "@": "/src",
+      },
+    },
   };
 });
