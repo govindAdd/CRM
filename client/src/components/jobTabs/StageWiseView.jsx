@@ -1,9 +1,8 @@
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Tippy from "@tippyjs/react";
 import {
   CheckCircle,
-  Circle,
   FilePlus,
   PhoneCall,
   Users,
@@ -23,7 +22,7 @@ const STAGES = [
   { key: "onboarding", label: "Onboarding", icon: UserCheck },
 ];
 
-// === Utility for conditional classes ===
+// === Utility for conditional classNames ===
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
 const StageWiseView = () => {
@@ -33,20 +32,53 @@ const StageWiseView = () => {
 
   const setStage = (stageKey) => setParams({ stage: stageKey });
 
+  // === Stage content rendering ===
   const renderStageComponent = () => {
     switch (currentStage) {
       case "create":
         return <CreateJob />;
       case "telephone":
-        return <div className="text-center text-gray-500">Telephone Interview Stage</div>;
+        return (
+          <div className="text-center text-gray-500 text-lg font-medium">
+            📞 Conduct the telephone interview with the candidate.
+          </div>
+        );
+      case "face_to_face":
+        return (
+          <div className="text-center text-gray-500 text-lg font-medium">
+            🧑‍💼 Face-to-Face interview stage coming soon...
+          </div>
+        );
+      case "virtual":
+        return (
+          <div className="text-center text-gray-500 text-lg font-medium">
+            💻 Virtual interview panel configuration loading...
+          </div>
+        );
+      case "offered":
+        return (
+          <div className="text-center text-gray-500 text-lg font-medium">
+            🎉 Candidate has been offered the job.
+          </div>
+        );
+      case "onboarding":
+        return (
+          <div className="text-center text-gray-500 text-lg font-medium">
+            🚀 Onboarding checklist initiation in progress...
+          </div>
+        );
       default:
-        return <div className="text-center text-gray-500">Coming soon...</div>;
+        return (
+          <div className="text-center text-gray-500 text-lg font-medium">
+            Coming soon...
+          </div>
+        );
     }
   };
 
   return (
     <div className="w-full">
-      {/* === Stepper Header === */}
+      {/* === Stepper Navigation === */}
       <div className="overflow-x-auto scrollbar-thin">
         <nav
           className="flex flex-wrap justify-center items-center gap-4 px-4 sm:px-6 py-4"
@@ -97,7 +129,7 @@ const StageWiseView = () => {
                   </button>
                 </Tippy>
 
-                {/* === Connector === */}
+                {/* === Connector between steps === */}
                 {index < STAGES.length - 1 && (
                   <div
                     className={cn(
@@ -113,9 +145,19 @@ const StageWiseView = () => {
         </nav>
       </div>
 
-      {/* === Stage Content === */}
-      <div className="p-4 sm:p-6 md:p-8 xl:p-10 2xl:p-12">
-        {renderStageComponent()}
+      {/* === Stage Content with Animated Transitions === */}
+      <div className="p-4 sm:p-6 md:p-8 xl:p-10 2xl:p-12 min-h-[300px]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStage}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            {renderStageComponent()}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

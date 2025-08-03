@@ -23,7 +23,7 @@ export const createJobApplication = createAsyncThunk(
   "jobApplication/create",
   async (formData, { rejectWithValue }) => {
     try {
-      const { data } = await api.post("/api/job-applications", formData, {
+      const { data } = await api.post("/job-applications", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return data.data;

@@ -3,15 +3,15 @@ import { useDispatch, useSelector } from "react-redux";
 import { Loader2, UsersRound, RotateCw } from "lucide-react";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
-import useGetResignedEmployees from "../../hooks/hr/onboardAndResign/useSubmitResignation";
+//import useGetResignedEmployees from "../../hooks/hr/onboardAndResign/useSubmitResignation";
 
 function Resignations() {
   const { resigned, loading } = useSelector((state) => state.hr);
-  const { handleSubmitResignation } = useGetResignedEmployees();
+//  const { handleSubmitResignation } = useGetResignedEmployees();
 
-  useEffect(() => {
-    handleSubmitResignation();
-  }, [handleSubmitResignation]);
+  // useEffect(() => {
+  //   handleSubmitResignation();
+  // }, [handleSubmitResignation]);
 
   return (
     <div className="p-4 space-y-4"> 
@@ -22,7 +22,7 @@ function Resignations() {
         </div>
         <Tippy content="Refresh List">
           <button
-            onClick={handleSubmitResignation}
+            // onClick={handleSubmitResignation}
             className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition"
             disabled={loading}
           >

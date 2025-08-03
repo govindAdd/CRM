@@ -108,7 +108,6 @@ const jobApplicationSchema = new Schema(
     status: {
       type: String,
       enum: FINAL_STATUSES,
-      default: "not_hired",
     },
 
     rejectionReason: {
