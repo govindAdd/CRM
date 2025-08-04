@@ -1,4 +1,5 @@
 import { useSearchParams } from "react-router-dom";
+import { useMemo, useState, Fragment } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Tippy from "@tippyjs/react";
 import {
@@ -11,8 +12,9 @@ import {
   UserCheck,
 } from "lucide-react";
 import CreateJob from "./CreateJob";
-
-// === STAGES definition ===
+import MoveToNextStageForm from "./MoveToNextStageForm";
+import FaceToFaceInterview from "./FaceToFaceInterview";
+// === Stage Constants ===
 const STAGES = [
   { key: "create", label: "Create", icon: FilePlus },
   { key: "telephone", label: "Telephone Interview", icon: PhoneCall },
@@ -22,66 +24,74 @@ const STAGES = [
   { key: "onboarding", label: "Onboarding", icon: UserCheck },
 ];
 
-// === Utility for conditional classNames ===
+// === Utility: Class Name Combiner ===
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
 const StageWiseView = () => {
   const [params, setParams] = useSearchParams();
-  const currentStage = params.get("stage") || STAGES[0].key;
-  const currentIndex = STAGES.findIndex((s) => s.key === currentStage);
+  const stageParam = params.get("stage");
 
-  const setStage = (stageKey) => setParams({ stage: stageKey });
+  const currentStage = useMemo(
+    () =>
+      STAGES.some((s) => s.key === stageParam) ? stageParam : STAGES[0].key,
+    [stageParam]
+  );
 
-  // === Stage content rendering ===
-  const renderStageComponent = () => {
+  const currentIndex = useMemo(
+    () => STAGES.findIndex((s) => s.key === currentStage),
+    [currentStage]
+  );
+
+  const [applicationData, setApplicationData] = useState(null);
+
+  const setStage = (stageKey) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("stage", stageKey);
+      return next;
+    });
+  };
+
+  const handleApplicationCreated = (data) => {
+    setApplicationData(data);
+    setStage("telephone");
+  };
+
+  const renderStageComponent = useMemo(() => {
     switch (currentStage) {
       case "create":
-        return <CreateJob />;
+        return <CreateJob onSuccess={handleApplicationCreated} />;
       case "telephone":
         return (
-          <div className="text-center text-gray-500 text-lg font-medium">
-            📞 Conduct the telephone interview with the candidate.
-          </div>
+          <MoveToNextStageForm
+            application={applicationData}
+            onNext={() => setStage("face_to_face")}
+          />
         );
       case "face_to_face":
-        return (
-          <div className="text-center text-gray-500 text-lg font-medium">
-            🧑‍💼 Face-to-Face interview stage coming soon...
-          </div>
-        );
+        return <FaceToFaceInterview application={applicationData} />;
       case "virtual":
         return (
-          <div className="text-center text-gray-500 text-lg font-medium">
-            💻 Virtual interview panel configuration loading...
-          </div>
+          <Placeholder text="💻 Virtual interview configuration loading..." />
         );
       case "offered":
-        return (
-          <div className="text-center text-gray-500 text-lg font-medium">
-            🎉 Candidate has been offered the job.
-          </div>
-        );
+        return <Placeholder text="🎉 Candidate has been offered the job." />;
       case "onboarding":
         return (
-          <div className="text-center text-gray-500 text-lg font-medium">
-            🚀 Onboarding checklist initiation in progress...
-          </div>
+          <Placeholder text="🚀 Onboarding checklist initiation in progress..." />
         );
       default:
-        return (
-          <div className="text-center text-gray-500 text-lg font-medium">
-            Coming soon...
-          </div>
-        );
+        return <Placeholder text="Coming soon..." />;
     }
-  };
+  }, [currentStage, applicationData]);
 
   return (
     <div className="w-full">
       {/* === Stepper Navigation === */}
       <div className="overflow-x-auto scrollbar-thin">
         <nav
-          className="flex flex-wrap justify-center items-center gap-4 px-4 sm:px-6 py-4"
+          className="flex justify-center items-center gap-4 px-4 py-4 flex-wrap"
+          role="navigation"
           aria-label="Job Application Stage Navigation"
         >
           {STAGES.map((stage, index) => {
@@ -90,77 +100,86 @@ const StageWiseView = () => {
             const Icon = stage.icon;
 
             return (
-              <div key={stage.key} className="flex items-center">
+              <Fragment key={stage.key}>
                 <Tippy content={stage.label} placement="bottom">
                   <button
                     onClick={() => setStage(stage.key)}
                     className={cn(
-                      "flex flex-col items-center group focus:outline-none transition-colors duration-150",
+                      "flex flex-col items-center group transition-colors focus:outline-none",
                       isActive
-                        ? "text-blue-600"
+                        ? "text-blue-600 dark:text-blue-400"
                         : isCompleted
-                        ? "text-green-600"
-                        : "text-gray-400"
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-gray-400 dark:text-gray-500"
                     )}
                     aria-current={isActive ? "step" : undefined}
+                    aria-label={stage.label}
                   >
                     <motion.div
                       className={cn(
-                        "w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center",
+                        "w-10 h-10 rounded-full border-2 flex items-center justify-center",
                         isActive
-                          ? "border-blue-600 bg-blue-100"
+                          ? "border-blue-600 bg-blue-100 dark:border-blue-400 dark:bg-blue-900/20"
                           : isCompleted
-                          ? "border-green-600 bg-green-100"
-                          : "border-gray-300 bg-white"
+                          ? "border-green-600 bg-green-100 dark:border-green-400 dark:bg-green-900/20"
+                          : "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800"
                       )}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                       transition={{ duration: 0.2 }}
                     >
                       {isCompleted ? (
-                        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <CheckCircle className="w-5 h-5" />
                       ) : (
-                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <Icon className="w-5 h-5" />
                       )}
                     </motion.div>
-                    <span className="text-[10px] sm:text-xs mt-1 group-hover:underline text-center w-16 sm:w-24 truncate">
+                    <span className="text-xs mt-1 group-hover:underline text-center w-24 truncate">
                       {stage.label}
                     </span>
                   </button>
                 </Tippy>
 
-                {/* === Connector between steps === */}
                 {index < STAGES.length - 1 && (
                   <div
                     className={cn(
-                      "w-6 sm:w-10 h-0.5 mx-1 sm:mx-2",
-                      index < currentIndex ? "bg-green-500" : "bg-gray-300"
+                      "w-10 h-0.5 mx-2",
+                      index < currentIndex
+                        ? "bg-green-500 dark:bg-green-400"
+                        : "bg-gray-300 dark:bg-gray-600"
                     )}
                     aria-hidden="true"
                   />
                 )}
-              </div>
+              </Fragment>
             );
           })}
         </nav>
       </div>
 
-      {/* === Stage Content with Animated Transitions === */}
-      <div className="p-4 sm:p-6 md:p-8 xl:p-10 2xl:p-12 min-h-[300px]">
+      {/* === Stage Content === */}
+      <div className="p-6 sm:p-8 md:p-10 min-h-[300px]">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStage}
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
+            exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            {renderStageComponent()}
+            {renderStageComponent}
           </motion.div>
         </AnimatePresence>
       </div>
     </div>
   );
 };
+
+// === Placeholder Component ===
+const Placeholder = ({ text }) => (
+  <div className="text-center text-gray-500 dark:text-gray-400 text-lg font-medium">
+    {text}
+  </div>
+);
 
 export default StageWiseView;

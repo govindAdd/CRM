@@ -57,7 +57,7 @@ export const moveToNextStage = createAsyncThunk(
   "jobApplication/moveToNextStage",
   async ({ id, nextStage, notes }, { rejectWithValue }) => {
     try {
-      const { data } = await api.patch(`/api/job-applications/${id}/move-stage`, {
+      const { data } = await api.patch(`/job-applications/${id}/move-stage`, {
         nextStage,
         notes,
       });

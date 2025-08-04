@@ -4,8 +4,10 @@
   "description": "Backend server for CRM system with modular architecture including Production, Sales, HR, Telecom, Data Mining, After Sales, and Training modules.",
   "type": "module",
   "main": "index.js",
-  "scripts": {
-    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
+   "scripts": {
+    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js",
+    "start": "node --experimental-json-modules src/index.js",
+    "build": "npm install"
   },
   "keywords": [
     "crm",

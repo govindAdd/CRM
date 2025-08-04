@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { useCreateJobApplication } from "../../hooks/job/useCreateJobApplication";
 
-// === Validation Schema ===
 const schema = yup.object({
   fullName: yup.string().required("Full name is required"),
   email: yup.string().email("Invalid email").required("Email is required"),
@@ -49,7 +48,6 @@ const schema = yup.object({
     }),
 });
 
-// === Source Options ===
 const sources = [
   "referral",
   "linkedin",
@@ -91,7 +89,7 @@ const inputFields = [
   },
 ];
 
-const CreateJob = () => {
+const CreateJob = ({ onSuccess }) => {
   const {
     register,
     handleSubmit,
@@ -146,39 +144,39 @@ const CreateJob = () => {
     const result = await create(formData);
     if (result.success) {
       toast.success("Application submitted successfully!");
-      setIsTransitioning(true); // trigger fade-out
-
+      setIsTransitioning(true);
       setTimeout(() => {
         reset();
         setSelectedSource("");
+        onSuccess?.(result.data);
         setParams({ stage: "telephone" });
-        setIsTransitioning(false); // optional, in case returning to this stage
-      }, 100); // fade out before changing step
+      }, 300);
     } else {
       toast.error(result.error || "Failed to submit application");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-white to-zinc-100 dark:from-zinc-900 dark:to-zinc-800 flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-gradient-to-br from-zinc-100 via-white to-zinc-50 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-900">
       <AnimatePresence mode="wait">
         {!isTransitioning && (
           <motion.form
-            key="create-form"
+            key="create-job-form"
             onSubmit={handleSubmit(onSubmit)}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
             encType="multipart/form-data"
-            className="w-full max-w-xl bg-white dark:bg-zinc-900 p-8 md:p-10 rounded-2xl shadow-xl space-y-6"
+            className="w-full max-w-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-700 backdrop-blur-md p-8 rounded-2xl shadow-2xl space-y-6"
           >
+            {/* === Heading === */}
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-zinc-800 dark:text-white mb-1">
-                Submit Job Application
+              <h2 className="text-2xl font-bold text-zinc-800 dark:text-white">
+                Submit Application
               </h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Fill the form to apply
+                Fill out the form below to apply
               </p>
             </div>
 
@@ -186,18 +184,18 @@ const CreateJob = () => {
             {inputFields.map(
               ({ name, type, label, placeholder, icon: Icon }) => (
                 <div key={name}>
-                  <label className="block mb-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  <label className="block text-sm mb-1 text-zinc-700 dark:text-zinc-300">
                     {label}
                   </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400">
+                    <span className="absolute inset-y-0 left-3 flex items-center text-zinc-400 dark:text-zinc-500">
                       <Icon size={16} />
                     </span>
                     <input
                       {...register(name)}
                       type={type}
                       placeholder={placeholder}
-                      className="w-full pl-10 pr-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                      className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-600"
                     />
                   </div>
                   {errors[name] && (
@@ -209,28 +207,28 @@ const CreateJob = () => {
               )
             )}
 
-            {/* === Source Dropdown === */}
+            {/* === Source Select === */}
             <div>
-              <label className="block mb-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <label className="block text-sm mb-1 text-zinc-700 dark:text-zinc-300">
                 Source <span className="text-red-500">*</span>
               </label>
               <Listbox value={selectedSource} onChange={setSelectedSource}>
                 <div className="relative">
-                  <Listbox.Button className="relative w-full cursor-default rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 py-2 pl-4 pr-10 text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+                  <Listbox.Button className="w-full py-2 pl-4 pr-10 text-left text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-600">
                     <span className="block truncate">
                       {selectedSource || "Select source"}
                     </span>
-                    <span className="absolute inset-y-0 right-3 flex items-center text-zinc-500">
+                    <span className="absolute inset-y-0 right-3 flex items-center text-zinc-500 dark:text-zinc-400">
                       <ChevronDown size={18} />
                     </span>
                   </Listbox.Button>
                   <Transition
                     as={Fragment}
-                    leave="transition ease-in duration-100"
-                    leaveFrom="opacity-100 translate-y-0"
-                    leaveTo="opacity-0 -translate-y-1"
+                    leave="transition duration-100"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
                   >
-                    <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-zinc-800 py-1 text-sm shadow-lg ring-1 ring-black/10">
+                    <Listbox.Options className="absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-xl bg-white dark:bg-zinc-800 py-1 text-sm shadow-lg ring-1 ring-black/10 dark:ring-white/10">
                       {sources.map((source) => (
                         <Listbox.Option
                           key={source}
@@ -238,22 +236,22 @@ const CreateJob = () => {
                           className={({ active }) =>
                             `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
                               active
-                                ? "bg-blue-100 text-blue-900 dark:bg-zinc-700 dark:text-white"
-                                : "text-zinc-900 dark:text-zinc-100"
+                                ? "bg-purple-100 text-purple-900 dark:bg-zinc-700 dark:text-white"
+                                : "text-zinc-900 dark:text-white"
                             }`
                           }
                         >
                           {({ selected }) => (
                             <>
                               <span
-                                className={`block truncate ${
-                                  selected ? "font-semibold" : "font-normal"
-                                }`}
+                                className={`${
+                                  selected ? "font-medium" : "font-normal"
+                                } block truncate`}
                               >
                                 {source}
                               </span>
                               {selected && (
-                                <span className="absolute left-3 inset-y-0 flex items-center text-blue-600 dark:text-blue-400">
+                                <span className="absolute left-3 inset-y-0 flex items-center text-purple-600 dark:text-purple-400">
                                   <Check size={16} />
                                 </span>
                               )}
@@ -273,10 +271,10 @@ const CreateJob = () => {
               )}
             </div>
 
-            {/* === Resume Upload with Drag & Drop === */}
+            {/* === Resume Dropzone === */}
             <div>
-              <label className="block mb-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Upload Resume <span className="text-red-500">*</span>
+              <label className="block text-sm mb-1 text-zinc-700 dark:text-zinc-300">
+                Resume <span className="text-red-500">*</span>
               </label>
               <motion.div
                 {...getRootProps()}
@@ -284,37 +282,35 @@ const CreateJob = () => {
                 animate={isDragActive ? "active" : "idle"}
                 variants={{
                   idle: {
-                    borderColor: "#d4d4d8",
-                    backgroundColor: "#ffffff",
                     scale: 1,
-                    boxShadow: "0px 0px 0px rgba(0,0,0,0)",
+                    borderColor: "#e4e4e7",
+                    backgroundColor: "rgba(255,255,255,0.6)",
                   },
                   active: {
-                    borderColor: "#3b82f6",
-                    backgroundColor: "#eff6ff",
                     scale: 1.02,
-                    boxShadow: "0px 0px 12px rgba(59,130,246,0.25)",
+                    borderColor: "#9333ea",
+                    backgroundColor: "rgba(236, 233, 255, 0.6)",
                   },
                 }}
-                transition={{ type: "spring", stiffness: 300, damping: 24 }}
-                className="flex items-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer select-none dark:bg-zinc-800 dark:border-zinc-700"
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="flex items-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer bg-white dark:bg-zinc-800 dark:border-zinc-700"
               >
                 <input {...getInputProps()} />
-                <Upload size={18} className="text-zinc-400" />
+                <Upload
+                  size={18}
+                  className="text-zinc-400 dark:text-zinc-500"
+                />
                 <p className="text-sm truncate text-zinc-800 dark:text-zinc-200">
-                  {resumeFile?.name ||
-                    "Drag & drop your resume or click to upload"}
+                  {resumeFile?.name || "Drag & drop or click to upload resume"}
                 </p>
               </motion.div>
-
-              {resumeFile && resumeFile.type.startsWith("image/") && (
+              {resumeFile?.type?.startsWith("image/") && (
                 <img
                   src={URL.createObjectURL(resumeFile)}
                   alt="Preview"
-                  className="mt-2 h-32 object-contain rounded-md border border-zinc-200 dark:border-zinc-700"
+                  className="mt-2 h-28 object-contain border border-zinc-300 dark:border-zinc-700 rounded-md"
                 />
               )}
-
               {errors.resumeUrl && (
                 <p className="text-xs text-red-500 mt-1">
                   {errors.resumeUrl.message}
@@ -326,7 +322,7 @@ const CreateJob = () => {
             <button
               type="submit"
               disabled={loading || isSubmitting}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-60"
+              className="w-full bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-700 hover:to-indigo-600 text-white font-semibold py-2.5 rounded-xl shadow-md transition disabled:opacity-60"
             >
               {loading || isSubmitting ? "Submitting..." : "Submit Application"}
             </button>
