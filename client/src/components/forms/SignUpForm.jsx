@@ -84,7 +84,7 @@ const RegisterForm = () => {
       reset();
       URL.revokeObjectURL(avatarPreview ?? "");
       setAvatarPreview(null);
-      requestAnimationFrame(() => navigate("/"));
+      requestAnimationFrame(() => navigate("/login"));
     } catch (error) {
       console.error("Registration error:", error);
     }
