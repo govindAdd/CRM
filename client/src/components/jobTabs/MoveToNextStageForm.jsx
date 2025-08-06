@@ -4,17 +4,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { useMoveToNextStage } from "../../hooks/job/useMoveToNextStage";
 
+// === STAGES mapped to backend keys & ordered ===
 const STAGES = [
-  { key: "create", label: "Create" },
-  { key: "telephone", label: "Telephone Interview" },
-  { key: "virtual", label: "Virtual Interview" },
+  { key: "telephone_interview", label: "Telephone Interview" },
   { key: "face_to_face", label: "Face-to-Face Interview" },
-  { key: "offer", label: "Offer & Onboarding" },
+  { key: "virtual_interview", label: "Virtual Interview" },
 ];
 
 const MoveToNextStageForm = ({ application, onNext }) => {
   const [params, setParams] = useSearchParams();
-  const currentStage = params.get("stage") || "create";
+  // derive currentStage from application if present, otherwise from params (fallback)
+  const currentStageFromApp = application?.currentStage;
+  const currentStageParam = params.get("stage");
+  const currentStage =
+    currentStageFromApp || (STAGES.some((s) => s.key === currentStageParam) ? currentStageParam : STAGES[0].key);
+
   const currentIndex = STAGES.findIndex((s) => s.key === currentStage);
 
   const [nextStage, setNextStage] = useState("");
@@ -22,10 +26,23 @@ const MoveToNextStageForm = ({ application, onNext }) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const { moveStage, loading } = useMoveToNextStage();
-  const availableNextStages = useMemo(
-    () => STAGES.slice(currentIndex + 1),
-    [currentIndex]
-  );
+
+  // Available next stages: show stages *after* currentIndex.
+  // Special UX: when on telephone_interview show immediate interview choices first
+  const availableNextStages = useMemo(() => {
+    const after = STAGES.slice(currentIndex + 1);
+
+    if (currentStage === "telephone_interview") {
+      // prefer showing face_to_face and virtual_interview as primary options first
+      const preferred = after.filter((s) =>
+        ["face_to_face", "virtual_interview"].includes(s.key)
+      );
+      const rest = after.filter((s) => !["face_to_face", "virtual_interview"].includes(s.key));
+      return [...preferred, ...rest];
+    }
+
+    return after;
+  }, [currentIndex, currentStage]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,11 +51,13 @@ const MoveToNextStageForm = ({ application, onNext }) => {
       return;
     }
 
+    // must pass backend keys (we are)
     const res = await moveStage({
       id: application?._id,
       nextStage,
       notes,
     });
+
     console.log("Move Stage Response:", res);
     if (res.success) {
       toast.success("Moved to next stage successfully!");
@@ -47,7 +66,8 @@ const MoveToNextStageForm = ({ application, onNext }) => {
         setNextStage("");
         setNotes("");
         setIsTransitioning(false);
-        onNext?.();
+        // inform parent which stage to show next (we return backend key)
+        onNext?.(nextStage);
         setParams({ stage: nextStage });
       }, 400);
     } else {
@@ -56,7 +76,7 @@ const MoveToNextStageForm = ({ application, onNext }) => {
   };
 
   const currentStageLabel =
-    STAGES.find((s) => s.key === application?.currentStage)?.label || "N/A";
+    STAGES.find((s) => s.key === application?.currentStage || currentStage)?.label || "N/A";
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-gradient-to-br from-zinc-100 via-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-800">

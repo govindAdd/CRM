@@ -149,7 +149,7 @@ const CreateJob = ({ onSuccess }) => {
         reset();
         setSelectedSource("");
         onSuccess?.(result.data);
-        setParams({ stage: "telephone" });
+        setParams({ stage: "telephone_interview" });
       }, 300);
     } else {
       toast.error(result.error || "Failed to submit application");

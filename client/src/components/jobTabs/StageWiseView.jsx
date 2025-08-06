@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import { useMemo, useState, Fragment } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Tippy from "@tippyjs/react";
 import {
   CheckCircle,
@@ -14,14 +14,15 @@ import {
 import CreateJob from "./CreateJob";
 import MoveToNextStageForm from "./MoveToNextStageForm";
 import FaceToFaceInterview from "./FaceToFaceInterview";
-// === Stage Constants ===
+
+// === STAGES mapped to backend keys ===
 const STAGES = [
-  { key: "create", label: "Create", icon: FilePlus },
-  { key: "telephone", label: "Telephone Interview", icon: PhoneCall },
+  { key: "application_review", label: "Create", icon: FilePlus },
+  { key: "telephone_interview", label: "Telephone Interview", icon: PhoneCall },
   { key: "face_to_face", label: "Face-to-Face", icon: Users },
-  { key: "virtual", label: "Virtual Interview", icon: Video },
+  { key: "virtual_interview", label: "Virtual Interview", icon: Video },
   { key: "offered", label: "Offered", icon: BadgeCheck },
-  { key: "onboarding", label: "Onboarding", icon: UserCheck },
+  { key: "onboarded", label: "Onboarding", icon: UserCheck },
 ];
 
 // === Utility: Class Name Combiner ===
@@ -31,6 +32,7 @@ const StageWiseView = () => {
   const [params, setParams] = useSearchParams();
   const stageParam = params.get("stage");
 
+  // default to application_review if param invalid
   const currentStage = useMemo(
     () =>
       STAGES.some((s) => s.key === stageParam) ? stageParam : STAGES[0].key,
@@ -54,29 +56,30 @@ const StageWiseView = () => {
 
   const handleApplicationCreated = (data) => {
     setApplicationData(data);
-    setStage("telephone");
+    // use backend key
+    setStage("telephone_interview");
   };
 
   const renderStageComponent = useMemo(() => {
     switch (currentStage) {
-      case "create":
+      case "application_review":
         return <CreateJob onSuccess={handleApplicationCreated} />;
-      case "telephone":
+      case "telephone_interview":
         return (
           <MoveToNextStageForm
             application={applicationData}
-            onNext={() => setStage("face_to_face")}
+            onNext={(pickedStage) => setStage(pickedStage)}
           />
         );
       case "face_to_face":
         return <FaceToFaceInterview application={applicationData} />;
-      case "virtual":
+      case "virtual_interview":
         return (
           <Placeholder text="💻 Virtual interview configuration loading..." />
         );
       case "offered":
         return <Placeholder text="🎉 Candidate has been offered the job." />;
-      case "onboarding":
+      case "onboarded":
         return (
           <Placeholder text="🚀 Onboarding checklist initiation in progress..." />
         );

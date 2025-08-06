@@ -194,8 +194,8 @@ const moveToNextStage = asyncHandler(async (req, res) => {
   if (!isValidObjectId(id)) {
     throw new ApiError(400, "Invalid job application ID");
   }
-
   if (!nextStage || !STAGES.includes(nextStage)) {
+    console.log("Moving to next stage:", nextStage || "not provided");
     throw new ApiError(400, "Invalid or missing nextStage");
   }
 
@@ -211,10 +211,10 @@ const moveToNextStage = asyncHandler(async (req, res) => {
     throw new ApiError(400, `Cannot move to previous or same stage`);
   }
 
-  // Example: prevent skipping more than 1 stage unless admin
-  if (nextStageIndex - currentStageIndex > 2 && !req.user?.isSuperAdmin) {
-    throw new ApiError(403, "Skipping multiple stages is not allowed");
-  }
+  // // Example: prevent skipping more than 1 stage unless admin
+  // if (nextStageIndex - currentStageIndex > 2 && !req.user?.isSuperAdmin) {
+  //   throw new ApiError(403, "Skipping multiple stages is not allowed");
+  // }
 
   // Update stage
   application.currentStage = nextStage;
