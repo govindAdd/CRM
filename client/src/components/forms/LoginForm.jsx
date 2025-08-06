@@ -34,18 +34,18 @@ const LoginForm = () => {
           {/* Logo + Branding */}
           <div className="flex flex-col items-center mb-8">
             <img src={logo} alt="Logo" className="h-16 object-contain mb-1" />
-            <span className="text-xl font-semibold tracking-wide text-gray-800">
-              add <span className="text-[#FF9100]">god</span>
+            <span className="text-2xl font-semibold text-gray-800 font-god tracking-wider">
+              ADD <span className="text-[#FF9100] font-god tracking-wider">GOD</span>
             </span>
-            <h1 className="text-2xl font-bold text-gray-800 mt-2">Hello!</h1>
-            <p className="text-gray-500 text-sm">Sign in to your account</p>
+            <h1 className="text-4xl font-bold text-gray-800 mt-2 font-god tracking-wider">Hello!</h1>
+            <p className="text-gray-500 text-sm font-digi">Sign in to your account</p>
           </div>
 
           {/* Login Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Email */}
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
+              <label className="text-sm font-medium text-gray-700 mb-1 block font-digi">
                 E-mail
               </label>
               <div className="flex items-center gap-2 px-4 py-3 bg-white rounded-xl shadow-sm border border-gray-200">
@@ -55,14 +55,14 @@ const LoginForm = () => {
                   {...register("email")}
                   required
                   placeholder="Enter your email"
-                  className="flex-1 bg-transparent outline-none text-sm"
+                  className="flex-1 bg-transparent outline-none text-sm font-digi"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
+              <label className="text-sm font-medium text-gray-700 mb-1 block font-digi">
                 Password
               </label>
               <div className="flex items-center gap-2 px-4 py-3 bg-white rounded-xl shadow-sm border border-gray-200">
@@ -83,7 +83,7 @@ const LoginForm = () => {
                 </button>
               </div>
               <div className="text-right mt-1">
-                <a href="/forgot-password" className="text-xs text-purple-500 hover:underline">
+                <a href="/forgot-password" className="text-xs text-purple-500 hover:underline font-digi">
                   Forgot password?
                 </a>
               </div>
@@ -92,7 +92,7 @@ const LoginForm = () => {
             {/* Remember Me */}
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm text-gray-600">
-                <input type="checkbox" className="accent-purple-500" />
+                <input type="checkbox" className="accent-purple-500 font-digi" />
                 Remember me
               </label>
             </div>
@@ -101,16 +101,16 @@ const LoginForm = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 text-white bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl shadow-md font-semibold text-sm hover:opacity-90 transition disabled:opacity-60"
+              className="w-full py-3 text-white bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl shadow-md font-semibold text-sm hover:opacity-90 transition disabled:opacity-60 font-digi"
             >
               {loading ? "Logging in..." : "SIGN IN"}
             </button>
           </form>
 
           {/* Register */}
-          <div className="text-center mt-6 text-sm text-gray-600">
-            Don’t have an account?{" "}
-            <a href="/signup" className="text-purple-500 font-medium hover:underline">
+          <div className="text-center mt-6 text-sm text-gray-600 font-digi">
+            Don't have an account?{" "}
+            <a href="/signup" className="text-purple-500 font-medium hover:underline font-digi">
               Create Account
             </a>
           </div>
@@ -119,8 +119,8 @@ const LoginForm = () => {
         {/* Right Welcome Panel */}
         <div className="hidden md:flex w-1/2 bg-gradient-to-tr from-[#6b21a8] to-[#3b82f6] items-center justify-center relative text-white p-10">
           <div className="z-10 text-center">
-            <h2 className="text-4xl font-bold mb-4">Welcome Back!</h2>
-            <p className="text-base font-light max-w-xs mx-auto">
+            <h2 className="text-4xl font-bold mb-4 font-beach tracking-widest">Welcome Back!</h2>
+            <p className="text-base font-light max-w-xs mx-auto font-beach tracking-widest">
               Welcome back! Log in to manage your tasks, team, and goals all in
               one place.
             </p>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { FiMenu } from "react-icons/fi";
 import Sidebar from "../components/Sidebar";
+import { Heart } from "lucide-react";
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -59,8 +60,46 @@ const Layout = ({ children }) => {
         <main className="flex flex-col flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-400 scrollbar-track-transparent p-6 md:p-10">
           <div className="flex-grow">{children}</div>
 
-          <footer className="mt-auto text-sm text-center text-zinc-500 pt-6">
-            © 2025 Add God PVT LTD. All rights reserved.
+          <footer className="mt-auto w-full py-6 text-center border-t border-zinc-100 dark:border-neutral-800/50">
+            <div className="mx-auto max-w-[90ch] px-4">
+              <p className="text-xs md:text-sm text-zinc-500/90 dark:text-zinc-400/80">
+                © 2025{" "}
+                <span className="font-god tracking-widest text-zinc-700 dark:text-zinc-200">
+                  Add God PVT LTD
+                </span>
+                . All rights reserved.
+                <span className="hidden md:inline"> • </span>
+                <br className="md:hidden" />
+                <span className="inline-flex items-center justify-center mt-1 md:mt-0 text-xs md:text-sm">
+                  Crafted with
+                  <Heart className="mx-1 text-red-500/90 w-3.5 h-3.5 md:w-4 md:h-4 fill-red-500/90" />
+                  in Vrindavan Mathura
+                </span>
+              </p>
+
+              {/* <div className="mt-3 flex justify-center space-x-4 text-[0.7rem] md:text-xs">
+                <a
+                  href="/terms"
+                  className="text-zinc-500/70 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                >
+                  Terms
+                </a>
+                <span className="text-zinc-400/50">|</span>
+                <a
+                  href="/privacy"
+                  className="text-zinc-500/70 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                >
+                  Privacy
+                </a>
+                <span className="text-zinc-400/50">|</span>
+                <a
+                  href="/legal"
+                  className="text-zinc-500/70 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                >
+                  Legal
+                </a>
+              </div> */}
+            </div>
           </footer>
         </main>
       </div>

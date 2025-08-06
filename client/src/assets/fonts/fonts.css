@@ -1,0 +1,26 @@
+/* BeachTowel font */
+@font-face {
+  font-family: "BeachTowel";
+  src: url("./BeachTowel-BF6890c23459b1c.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* CSArogant font */
+@font-face {
+  font-family: "CSArogant";
+  src: url("./CSArogant.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* BlackBison fornt  */
+@font-face {
+  font-family: "BlackBison";
+  src: url("./BlackBison.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}

@@ -64,7 +64,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         <div className="text-center shrink-0">
           <div className="flex items-center justify-center gap-2 mb-6">
             <img src={logo} alt="ADDGOD" className="h-10" />
-            <h1 className="text-xl font-extrabold text-purple-700">Add God</h1>
+            <h1 className="text-2xl font-extrabold text-gray-800 font-god tracking-wider">Add <span className="text-[#FF9100]">God</span></h1>
           </div>
 
           <img

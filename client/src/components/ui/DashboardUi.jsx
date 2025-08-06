@@ -40,7 +40,7 @@ const DashboardUi = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search leads, deals..."
-            className="pl-10 pr-4 py-2 w-full rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm focus:ring-purple-500 focus:border-purple-500 dark:bg-zinc-900"
+            className="pl-10 pr-4 py-2 w-full font-digi rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm focus:ring-purple-500 focus:border-purple-500 dark:bg-zinc-900"
           />
         </div>
         <div className="ml-4 relative">
@@ -61,7 +61,7 @@ const DashboardUi = () => {
             transition={{ delay: i * 0.1 }}
             className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all"
           >
-            <h3 className="text-sm font-medium text-gray-500 dark:text-zinc-400">
+            <h3 className="text-sm font-medium text-gray-500 dark:text-zinc-400 font-digi">
               {kpi.label}
             </h3>
             <p className="text-2xl font-bold mt-1">{kpi.value}</p>
@@ -78,7 +78,7 @@ const DashboardUi = () => {
 
       {/* Chart */}
       <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-        <h2 className="text-lg font-semibold mb-4">Revenue Overview</h2>
+        <h2 className="text-lg font-semibold mb-4 font-digi">Revenue Overview</h2>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />

@@ -37,3 +37,53 @@
 .td {
   @apply px-4 py-2 border-t border-gray-200 dark:border-neutral-700;
 }
+
+/* Font Face Definitions */
+@font-face {
+  font-family: 'BeachTowel';
+  src: url('./assets/fonts/BeachTowel-BF6890c23459b1c.ttf');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'CSArogant';
+  src: url('./assets/fonts/CSArogant.ttf');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'BlackBison';
+  src: url('./assets/fonts/BlackBison.ttf');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Godber';
+  src: url('./assets/fonts/godber.ttf');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Digiva';
+  src: url('./assets/fonts/Digiva.ttf');
+  font-display: swap;
+}
+/* Font Classes (one per font family) */
+.font-beach {
+  font-family: 'BeachTowel', sans-serif;
+}
+
+.font-arrogant {
+  font-family: 'CSArogant', sans-serif;
+}
+
+.font-bison {
+  font-family: 'BlackBison', sans-serif;
+}
+
+.font-god {
+  font-family: 'Godber', sans-serif;
+}
+
+.font-digi {
+  font-family: 'Digiva', sans-serif;
+}
