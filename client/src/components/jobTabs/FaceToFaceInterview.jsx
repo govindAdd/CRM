@@ -99,7 +99,7 @@ function FaceToFaceInterview() {
           </form>
         ) : (
           <div className="text-center text-green-600 font-medium mt-4">
-            ✅ Feedback submitted. You may proceed to the next stage.
+            Feedback submitted. You may proceed to the next stage.
           </div>
         )}
       </motion.div>

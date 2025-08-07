@@ -12,7 +12,15 @@ import jwt from "jsonwebtoken";
 import { Membership } from "../models/membership.model.js";
 import mongoose from "mongoose";
 
-const VALID_ROLES = ["superadmin", "admin", "manager","head", "employee",  "hr", "user"];
+const VALID_ROLES = [
+  "superadmin",
+  "admin",
+  "manager",
+  "head",
+  "employee",
+  "hr",
+  "user",
+];
 // Helper to generate access & refresh tokens
 const generateAccessAndRefreshTokens = async (userId) => {
   const user = await User.findById(userId);
@@ -74,14 +82,18 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   // Generate tokens
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(newUser._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    newUser._id
+  );
 
   // Save refresh token to DB
   newUser.refreshToken = refreshToken;
   await newUser.save();
 
   // Return safe user info
-  const safeUser = await User.findById(newUser._id).select("-password -refreshToken");
+  const safeUser = await User.findById(newUser._id).select(
+    "-password -refreshToken"
+  );
 
   // Set refresh token as HttpOnly cookie
   res
@@ -93,7 +105,11 @@ const registerUser = asyncHandler(async (req, res) => {
     })
     .status(201)
     .json(
-      new ApiResponse(201, { accessToken, user: safeUser }, "User registered successfully")
+      new ApiResponse(
+        201,
+        { accessToken, user: safeUser },
+        "User registered successfully"
+      )
     );
 });
 
@@ -116,10 +132,12 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!user) throw new ApiError(404, "User not found");
 
   const isValid = await user.isPasswordCorrect(password);
-  if (!isValid) throw new ApiError(401, "Invalid credentials");
+  if (!isValid) throw new ApiError(401, "Password is incorrect");
 
   // 🔐 Generate tokens
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id
+  );
 
   // 📍 Track login activity
   user.loginHistory.unshift({
@@ -133,7 +151,9 @@ const loginUser = asyncHandler(async (req, res) => {
   await user.save({ validateBeforeSave: false });
 
   // 🧼 Sanitize user data
-  const safeUser = await User.findById(user._id).select("-password -refreshToken");
+  const safeUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
 
   // 🍪 Cookie settings
   const cookieOptions = {
@@ -152,8 +172,8 @@ const loginUser = asyncHandler(async (req, res) => {
         200,
         {
           user: safeUser,
-          accessToken,      // optional: frontend can ignore this if using cookie
-          refreshToken,     // optional: avoid in frontend in production
+          accessToken, // optional: frontend can ignore this if using cookie
+          refreshToken, // optional: avoid in frontend in production
         },
         "User logged in successfully"
       )
@@ -186,9 +206,9 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("accessToken", cookieOptions)
     .clearCookie("refreshToken", cookieOptions);
 
-  return res.status(200).json(
-    new ApiResponse(200, {}, "User logged out successfully")
-  );
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "User logged out successfully"));
 });
 
 // ============================ Update Logged-In Profile ============================
@@ -259,13 +279,12 @@ If you did not request this, you can ignore this email.
   `;
 
   try {
-await sendEmail({
-  to: user.email,
-  subject: "Password Reset Link",
-  name: user.fullName,
-  resetUrl: resetURL, 
-});
-
+    await sendEmail({
+      to: user.email,
+      subject: "Password Reset Link",
+      name: user.fullName,
+      resetUrl: resetURL,
+    });
 
     res
       .status(200)
@@ -343,7 +362,15 @@ const updateUserRole = asyncHandler(async (req, res) => {
   const { role } = req.body;
   const { id } = req.params;
 
-  const validRoles = ["user", "hr", "manager", "superadmin", "head", "admin", "employee"];
+  const validRoles = [
+    "user",
+    "hr",
+    "manager",
+    "superadmin",
+    "head",
+    "admin",
+    "employee",
+  ];
   const allowedToChangeRoles = ["hr", "manager", "admin", "superadmin"];
 
   // 1. Restrict access to only specific roles
@@ -353,7 +380,10 @@ const updateUserRole = asyncHandler(async (req, res) => {
 
   // 2. Validate target role
   if (!validRoles.includes(role)) {
-    throw new ApiError(400, `Invalid role specified. Allowed roles: ${validRoles.join(", ")}`);
+    throw new ApiError(
+      400,
+      `Invalid role specified. Allowed roles: ${validRoles.join(", ")}`
+    );
   }
 
   const user = await User.findById(id);
@@ -363,7 +393,10 @@ const updateUserRole = asyncHandler(async (req, res) => {
 
   // 3. Prevent unauthorized modification of an existing superadmin
   if (user.role === "superadmin" && req.user.role !== "superadmin") {
-    throw new ApiError(403, "Only a superadmin can modify the role of another superadmin");
+    throw new ApiError(
+      403,
+      "Only a superadmin can modify the role of another superadmin"
+    );
   }
 
   // 4. Prevent assigning superadmin unless requester is also superadmin
@@ -374,9 +407,11 @@ const updateUserRole = asyncHandler(async (req, res) => {
   user.role = role;
   await user.save();
 
-  res.status(200).json(
-    new ApiResponse(200, user, `User role updated to '${role}' successfully`)
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, user, `User role updated to '${role}' successfully`)
+    );
 });
 
 // ============================ Public Profile by Username ============================
@@ -466,9 +501,15 @@ const deleteUser = asyncHandler(async (req, res) => {
   // ❌ Hard delete from DB
   await User.findByIdAndDelete(id);
 
-  res.status(200).json(
-    new ApiResponse(200, {}, `User '${targetUser.fullName}' deleted successfully`)
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        `User '${targetUser.fullName}' deleted successfully`
+      )
+    );
 });
 
 // ===================== GET USER DEPARTMENTS =====================
@@ -479,7 +520,9 @@ const getUserDepartment = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid user ID");
   }
 
-  const user = await User.findById(userId).select("fullName email avatar isActive").lean();
+  const user = await User.findById(userId)
+    .select("fullName email avatar isActive")
+    .lean();
   if (!user || !user.isActive) {
     throw new ApiError(404, "User not found or inactive");
   }
@@ -488,7 +531,7 @@ const getUserDepartment = asyncHandler(async (req, res) => {
     {
       $match: {
         user: new mongoose.Types.ObjectId(userId),
-        role: { $in: VALID_ROLES }
+        role: { $in: VALID_ROLES },
       },
     },
     {
@@ -546,7 +589,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(tokenFromCookie, process.env.REFRESH_TOKEN_SECRET);
+    const decoded = jwt.verify(
+      tokenFromCookie,
+      process.env.REFRESH_TOKEN_SECRET
+    );
     const user = await User.findById(decoded?._id);
     if (!user) throw new ApiError(401, "User not found");
 
@@ -568,7 +614,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .status(200)
-      .json(new ApiResponse(200, { accessToken, user }, "Refreshed successfully"));
+      .json(
+        new ApiResponse(200, { accessToken, user }, "Refreshed successfully")
+      );
   } catch (err) {
     throw new ApiError(401, "Invalid or expired refresh token");
   }
@@ -590,5 +638,5 @@ export {
   deleteUser,
   getUserDepartment,
   refreshAccessToken,
-  generateAccessAndRefreshTokens
+  generateAccessAndRefreshTokens,
 };

@@ -33,7 +33,8 @@ export const loginUser = createAsyncThunk(
 
       return user;
     } catch (err) {
-      return rejectWithValue(err?.response?.data?.message || 'Login failed');
+      console.error('Login error:', err?.response?.message);
+      return rejectWithValue(err?.response?.statusText || 'Login failed');
     }
   }
 );
