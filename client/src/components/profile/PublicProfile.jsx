@@ -3,11 +3,20 @@ import { useEffect, useRef, useState } from "react";
 import html2pdf from "html2pdf.js";
 import { ArrowLeft, Copy, Download, QrCode } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
-import 'react-loading-skeleton/dist/skeleton.css';
+import "react-loading-skeleton/dist/skeleton.css";
 import { toast } from "react-toastify";
 import { QRCodeSVG } from "qrcode.react";
 import api from "../../services/axios";
-import { Mail, Phone, Building2, BadgeInfo } from "lucide-react";
+import {
+  Mail,
+  Phone,
+  Building2,
+  BadgeInfo,
+  Globe,
+  Users,
+  Calendar,
+  Sparkles,
+} from "lucide-react";
 
 const InfoItem = ({ icon: Icon, label, value }) => (
   <div className="flex items-start gap-4 p-4 rounded-2xl bg-white bg-opacity-70 hover:bg-opacity-90 transition-all backdrop-blur-md border border-gray-200 shadow-md">
@@ -16,7 +25,9 @@ const InfoItem = ({ icon: Icon, label, value }) => (
     </div>
     <div>
       <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-sm font-medium text-gray-800 break-all">{value || "N/A"}</p>
+      <p className="text-sm font-medium text-gray-800 break-all">
+        {value || "N/A"}
+      </p>
     </div>
   </div>
 );
@@ -59,10 +70,16 @@ const ShareLink = ({ fullName }) => {
           value={href}
           className="w-full text-sm px-3 py-2 rounded border bg-white shadow-sm text-gray-700"
         />
-        <button onClick={handleCopy} className="text-indigo-600 hover:text-indigo-800">
+        <button
+          onClick={handleCopy}
+          className="text-indigo-600 hover:text-indigo-800"
+        >
           <Copy size={18} />
         </button>
-        <button onClick={() => setIsOpen(true)} className="text-indigo-600 hover:text-indigo-800">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="text-indigo-600 hover:text-indigo-800"
+        >
           <QrCode size={18} />
         </button>
       </div>
@@ -76,7 +93,9 @@ const ShareLink = ({ fullName }) => {
             >
               ✕
             </button>
-            <h2 className="text-sm font-semibold text-gray-800 mb-4">Share Profile QR</h2>
+            <h2 className="text-sm font-semibold text-gray-800 mb-4">
+              Share Profile QR
+            </h2>
             <div ref={qrRef} className="flex justify-center">
               <QRCodeSVG
                 value={href}
@@ -114,25 +133,32 @@ const BackToDirectoryButton = () => {
 };
 
 const PublicProfilePage = () => {
-  const { username } = useParams();
+const { username } = useParams();
   const [employee, setEmployee] = useState(null);
   const [hr, setHr] = useState(null);
+  const [company, setCompany] = useState(null); // New state for company data
   const [loading, setLoading] = useState(true);
   const profileRef = useRef();
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get(`/users/user/${username}`);
-        setEmployee(res.data?.data?.employee);
-        setHr(res.data?.data?.hr);
+        setLoading(true);
+        // Fetch employee data
+        const employeeRes = await api.get(`/users/user/${username}`);
+        setEmployee(employeeRes.data?.data?.employee);
+        setHr(employeeRes.data?.data?.hr);
+        
+        // Fetch company data
+        const companyRes = await api.get("/info");
+        setCompany(companyRes.data.data);
       } catch (err) {
-        toast.error("User not found");
+        toast.error("Failed to load data");
       } finally {
         setLoading(false);
       }
     };
-    fetchProfile();
+    fetchData();
   }, [username]);
 
   const handleDownloadPDF = () => {
@@ -147,9 +173,9 @@ const PublicProfilePage = () => {
         .set({
           margin: 0.5,
           filename: `${employee?.fullName || "profile"}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
+          image: { type: "jpeg", quality: 0.98 },
           html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+          jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
         })
         .from(profileRef.current)
         .save();
@@ -172,7 +198,7 @@ const PublicProfilePage = () => {
           ref={profileRef}
         >
           {/* PDF Button */}
-          <div className="w-full flex justify-end mt-2 mb-2 md:mt-0 md:mb-0">
+          <div className="w-full flex justify-end mb-4">
             <button
               onClick={handleDownloadPDF}
               className="flex items-center gap-2 text-white bg-indigo-600 px-4 py-2 rounded-lg shadow hover:bg-indigo-700 transition"
@@ -183,7 +209,7 @@ const PublicProfilePage = () => {
           </div>
 
           {/* Header */}
-          <div className="flex flex-col md:flex-row items-center gap-8 pt-4 pb-6 bg-gradient-to-br from-white to-slate-100">
+          <div className="flex flex-col md:flex-row items-center gap-8 pt-4 pb-6">
             <img
               src={employee.avatar}
               alt={employee.fullName}
@@ -198,7 +224,7 @@ const PublicProfilePage = () => {
             </div>
           </div>
 
-          {/* Info */}
+          {/* Employee Info */}
           <div className="py-6 grid grid-cols-1 sm:grid-cols-2 gap-6 border-t border-gray-200">
             <InfoItem icon={Mail} label="Email" value={employee.email} />
             <InfoItem icon={Phone} label="Phone" value={employee.phone} />
@@ -206,9 +232,9 @@ const PublicProfilePage = () => {
             <InfoItem icon={BadgeInfo} label="Role" value={employee.role} />
           </div>
 
-          {/* HR */}
+          {/* HR Contact */}
           {hr && (
-            <div className="py-6 border-t border-gray-100 bg-slate-50 px-4 md:px-8 rounded-b-3xl">
+            <div className="py-6 border-t border-gray-200 bg-slate-50 px-4 md:px-8 rounded-xl">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">HR Contact</h3>
               <div className="flex items-center gap-4">
                 <img
@@ -219,6 +245,100 @@ const PublicProfilePage = () => {
                 <div>
                   <p className="text-gray-800 font-medium">{hr.fullName}</p>
                   <p className="text-sm text-gray-600">{hr.email}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Company Information */}
+          {company && (
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <div className="flex flex-col md:flex-row gap-6 items-center mb-6">
+                <img 
+                  src={company.LOGO_URL} 
+                  alt={company.NAME} 
+                  className="w-24 h-24 object-contain"
+                />
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">{company.NAME}</h2>
+                  <p className="text-indigo-600 font-medium">{company.TAGLINE}</p>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-gray-600 whitespace-pre-line">{company.DESCRIPTION}</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-slate-50 p-4 rounded-xl">
+                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Sparkles size={18} />
+                    Core Services
+                  </h3>
+                  <ul className="space-y-2">
+                    {company.CORE_SERVICES.map((service, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-indigo-500 mr-2">•</span>
+                        <span className="text-gray-600">{service}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div className="bg-slate-50 p-4 rounded-xl">
+                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Users size={18} />
+                    Why Choose Us
+                  </h3>
+                  <ul className="space-y-2">
+                    {company.WHY_CHOOSE_US.map((reason, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-indigo-500 mr-2">•</span>
+                        <span className="text-gray-600">{reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <InfoItem 
+                  icon={Calendar} 
+                  label="Established" 
+                  value={company.ESTABLISHED_YEAR} 
+                />
+                <InfoItem 
+                  icon={Users} 
+                  label="Employees" 
+                  value={company.EMPLOYEE_STRENGTH} 
+                />
+                <InfoItem 
+                  icon={Globe} 
+                  label="Industry" 
+                  value={company.INDUSTRY} 
+                />
+              </div>
+              
+              <div className="mt-6 bg-indigo-50 p-4 rounded-xl">
+                <h3 className="font-semibold text-gray-800 mb-3">Contact Information</h3>
+                <div className="space-y-2">
+                  <p className="text-gray-600">
+                    <span className="font-medium">Email:</span> {company.CONTACT.EMAIL}
+                  </p>
+                  <p className="text-gray-600">
+                    <span className="font-medium">Phone:</span> {company.CONTACT.PHONE}
+                  </p>
+                  <p className="text-gray-600">
+                    <span className="font-medium">Website:</span>{" "}
+                    <a 
+                      href={company.CONTACT.WEBSITE} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="text-indigo-600 hover:underline"
+                    >
+                      {company.CONTACT.WEBSITE}
+                    </a>
+                  </p>
                 </div>
               </div>
             </div>
