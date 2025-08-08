@@ -65,4 +65,23 @@ api.interceptors.response.use(
   }
 );
 
+// ======================== Client-Side Keep-Alive ======================== //
+// Only run in production environment
+if (import.meta.env.PROD) {
+  const selfPing = () => {
+    setInterval(async () => {
+      try {
+        // Use fetch instead of Axios to avoid interceptors
+        await fetch(`${import.meta.env.VITE_SERVER_URL}/health`);
+        console.log(`[KeepAlive] Ping successful at ${new Date().toISOString()}`);
+      } catch (e) {
+        console.error('[KeepAlive] Ping failed:', e.message);
+      }
+    }, 600000); // Ping every 10 minutes
+  };
+  
+  // Start keep-alive on app initialization
+  selfPing();
+}
+
 export default api;
