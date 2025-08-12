@@ -1,0 +1,48 @@
+# Development stage
+FROM node:24-bullseye AS dev
+
+# define the working directory
+# this is where the application code will be copied on the Docker image
+# and where the commands will be executed
+WORKDIR /app
+
+# copy the package.json and package-lock.json files to docker image
+# to the working directory
+# this is necessary to install the dependencies
+# before copying the rest of the application code
+COPY client/package.json client/package-lock.json ./
+RUN npm install --legacy-peer-deps
+
+# Copy the rest of the application code
+# to the working directory in the Docker image
+COPY client/ .
+
+# CMD to run the application in development mode
+# this will start the server and watch for changes at runtime
+CMD ["npm", "run", "dev"]
+
+# Build stage
+FROM node:24-bullseye AS build
+
+# define the working directory
+WORKDIR /app
+
+# copy the package.json and package-lock.json files to docker image
+# to the working directory
+COPY client/package.json client/package-lock.json ./
+RUN npm install --legacy-peer-deps
+
+# Copy the rest of the application code
+COPY client/ .
+RUN npm run build
+
+
+
+# Production stage
+FROM nginx:alpine AS prod
+
+# Copy the built application from the build stage
+# to the nginx html directory
+COPY --from=build /app/dist /usr/share/nginx/html
+
+CMD ["nginx", "-g", "daemon off;"]

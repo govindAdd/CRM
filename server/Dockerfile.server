@@ -1,0 +1,47 @@
+# Development stage
+FROM node:24-alpine3.21 AS dev
+
+# define the working directory
+# this is where the application code will be copied on the Docker image
+# and where the commands will be executed
+WORKDIR /app
+
+# copy the package.json and package-lock.json files to docker image
+# to the working directory
+# this is necessary to install the dependencies
+# before copying the rest of the application code
+COPY server/package.json ./           
+RUN npm install
+
+# Copy the rest of the application code
+# to the working directory in the Docker image
+COPY server/ .
+
+# CMD to run the application in development mode
+# this will start the server and watch for changes at runtime
+CMD ["npm", "run", "dev"]
+
+
+
+# Production stage
+FROM node:24-alpine3.21 AS prod
+# define the working directory
+# this is where the application code will be copied on the Docker image
+# and where the commands will be executed
+WORKDIR /app
+
+# copy the package.json and package-lock.json files to docker image
+# to the working directory
+# this is necessary to install the dependencies
+# before copying the rest of the application code
+COPY server/package.json ./           
+RUN npm install
+
+# Copy the rest of the application code
+# to the working directory in the Docker image
+COPY server/ .
+
+# CMD to run the application in development mode
+# this will start the server and watch for changes at runtime
+CMD ["npm", "run", "start"]
+

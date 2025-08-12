@@ -1,0 +1,64 @@
+services:
+    server-dev:
+        build:
+            context: .
+            dockerfile: server/Dockerfile.server
+            target: dev 
+        volumes:
+            - ./server:/app
+        ports:
+            - "3000:3000"
+        environment:
+            - NODE_ENV=development
+            - MONGO_URI=mongodb://db:27017/mydatabase
+        depends_on:
+            - db
+
+    client-dev:
+        build:
+            context: .
+            dockerfile: client/Dockerfile.client                
+            target: dev
+        volumes:
+             - ./client:/app
+             - /app/node_modules   # ✅ Keep container’s own node_modules
+        ports:
+            - "5173:5173"
+        environment:
+            - NODE_ENV=development
+            - API_URL=http://localhost:3000
+        depends_on:
+            - server-dev
+    server-prod:
+        build:
+            context: .
+            dockerfile: server/Dockerfile.server
+            target: prod
+        ports:
+            - "3000:3000"
+        environment:
+            - NODE_ENV=production
+            - MONGO_URI=mongodb://db:27017/mydatabase-prod
+        depends_on:
+            - db
+
+    client-prod:
+        build:
+            context: .
+            dockerfile: client/Dockerfile.client                
+            target: prod
+        ports:
+            - "5173:5173"
+        environment:
+            - NODE_ENV=production
+            - API_URL=http://localhost:3000
+        depends_on:
+            - server-prod
+    db:
+        image: mongo:latest
+        ports:
+            - "27017:27017"
+        volumes:
+            - db_data:/data/db
+volumes:
+    db_data:
