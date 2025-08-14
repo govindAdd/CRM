@@ -15,7 +15,7 @@ const JobApplicationPage = () => {
             aria-label="Job Application Dashboard"
           >
             <BriefcaseBusiness className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
-            Job Application Dashboard
+            Hiring and Onboarding Dashboard
           </h1>
 
           {/* Divider */}

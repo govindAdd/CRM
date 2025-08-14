@@ -17,7 +17,7 @@ const router = express.Router();
 router.post(
   "/",
   verifyJWT,
-  roleBasedAccess("admin", "superadmin"),
+  roleBasedAccess("admin", "hr", "manager", "superadmin"),
   createDepartment
 );
 router.get(
@@ -41,13 +41,13 @@ router.put(
 router.delete(
   "/:id",
   verifyJWT,
-  roleBasedAccess("admin", "superadmin"),
+  roleBasedAccess("admin", "hr", "manager", "superadmin"),
   deleteDepartment
 );
 router.put(
   "/:id/assign",
   verifyJWT,
-  roleBasedAccess("admin", "superadmin"),
+  roleBasedAccess("admin", "hr", "manager", "superadmin"),
   assignDepartmentMember
 );
 router.put(

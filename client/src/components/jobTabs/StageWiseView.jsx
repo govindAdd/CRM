@@ -14,6 +14,9 @@ import {
 import CreateJob from "./CreateJob";
 import MoveToNextStageForm from "./MoveToNextStageForm";
 import FaceToFaceInterview from "./FaceToFaceInterview";
+import VirtualInterview from "./VirtualInterview";
+import Offered from "./Offered";
+
 
 // === STAGES mapped to backend keys ===
 const STAGES = [
@@ -72,13 +75,11 @@ const StageWiseView = () => {
           />
         );
       case "face_to_face":
-        return <FaceToFaceInterview application={applicationData} />;
+        return <FaceToFaceInterview application={applicationData} onNext={(pickedStage) => setStage(pickedStage)}/>;
       case "virtual_interview":
-        return (
-          <Placeholder text="💻 Virtual interview configuration loading..." />
-        );
+        return <VirtualInterview application={applicationData} onNext={(pickedStage) => setStage(pickedStage)}/>;
       case "offered":
-        return <Placeholder text="🎉 Candidate has been offered the job." />;
+        return <Offered application={applicationData} onNext={(pickedStage) => setStage(pickedStage)} setParams={setParams} />;
       case "onboarded":
         return (
           <Placeholder text="🚀 Onboarding checklist initiation in progress..." />

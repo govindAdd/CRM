@@ -61,32 +61,7 @@ const __dirname = path.dirname(__filename);
 // Serve static files from /src/assets
 app.use("/assets", express.static(path.join(__dirname, "src/assets")));
 
-// Google
-import session from "express-session";
-import passport from "passport";
-import "./config/passport.js";
-import MongoStore from 'connect-mongo';
 
-app.use(session({
-  secret: process.env.SESSION_SECRET || "my_secure_random_string",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: false, // set to true in production with HTTPS
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-  },
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI, // or your connection string
-    ttl: 60 * 60 * 24 * 7 // 1 week
-  })
-}));
-// ✅ Passport middleware
-app.use(passport.initialize());
-app.use(passport.session());
-
-import authRoutes from "./routes/auth.routes.js";
-app.use('/api/v1/auth', authRoutes);
 
 
 

@@ -34,7 +34,7 @@ router.put(
 router.put("/change-password", verifyJWT, changeCurrentPassword);
 
 // ====================== ADMIN ROUTES ======================
-router.get("/", verifyJWT, roleBasedAccess("admin", "superadmin"), getAllUsers);
+router.get("/", verifyJWT, roleBasedAccess("admin", "superadmin", "hr", "manager"), getAllUsers);
 router.put(
   "/:id/role",
   verifyJWT,

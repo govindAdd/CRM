@@ -3,7 +3,8 @@ import {
   createJobApplication,
   checkDuplicateApplication,
   moveToNextStage,
-  addStageNote,
+  moveToFaceToFaceInterview,
+  moveToVirtualInterview,
   rejectAtStage,
   rollbackStage,
   markAsHired,
@@ -55,13 +56,30 @@ router.patch(
 );
 
 // 📝 Add stage note
+// 📝 Add stage note for Face to Face
 router.patch(
-  "/:id/stage-note",
+  "/:applicationId/face-to-face",
   verifyJWT,
   roleBasedAccess("hr", "manager", "admin", "superadmin"),
-  addStageNote
+  moveToFaceToFaceInterview
 );
 
+ // 📝 Add stage note for virtual interview
+router.patch(
+  "/:applicationId/virtual",
+  verifyJWT,
+  roleBasedAccess("hr", "manager", "admin", "superadmin"),
+  moveToVirtualInterview
+);
+
+// ✅ Mark as hired and create user account
+router.patch(
+  "/:id/hire",
+  verifyJWT,
+  roleBasedAccess("hr", "manager", "admin", "superadmin"),
+  upload.fields([{ name: "avatar", maxCount: 1 }]),
+  markAsHired
+);
 // ❌ Reject at current stage
 router.patch(
   "/:id/reject",
@@ -78,14 +96,6 @@ router.patch(
   rollbackStage
 );
 
-// ✅ Mark as hired and create user account
-router.patch(
-  "/:id/hire",
-  verifyJWT,
-  roleBasedAccess("hr", "manager", "admin", "superadmin"),
-  upload.fields([{ name: "avatar", maxCount: 1 }]),
-  markAsHired
-);
 
 // ❎ Mark as not hired
 router.patch(

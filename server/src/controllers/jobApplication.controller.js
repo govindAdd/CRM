@@ -2,10 +2,7 @@ import { isValidObjectId } from "mongoose";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { JobApplication } from "../models/jobApplication.model.js";
-import { STAGES } from "../models/jobApplication.model.js";
-import { ARCHIVE_REASONS } from "../models/jobApplication.model.js";
-import { REJECTION_REASONS } from "../models/jobApplication.model.js";
+import { JobApplication, STAGES, ARCHIVE_REASONS, REJECTION_REASONS } from "../models/jobApplication.model.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { generateAccessAndRefreshTokens } from "./user.controller.js";
@@ -231,40 +228,138 @@ const moveToNextStage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, application, `Moved to stage: ${nextStage}`));
 });
 
-// PATCH /api/job-applications/:id/stage-note
-// Body: { notes: "Candidate was late to interview" }
-const addStageNote = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { notes } = req.body;
-  const userId = req.user?._id;
+// PATCH /api/job-applications/:applicationId/face-to-face
+// Body: { notes?: "Candidate performed well", result?: "approve" | "reject" | "pending", rejectionReason?: "not_qualified" }
+const moveToFaceToFaceInterview = asyncHandler(async (req, res) => {
+  const { applicationId } = req.params;
+  const { notes, result, rejectionReason } = req.body;
+  const updatedBy = req.user?._id;
 
-  if (!isValidObjectId(id)) {
-    throw new ApiError(400, "Invalid job application ID");
+  if (!isValidObjectId(applicationId)) {
+    throw new ApiError(400, "Invalid Application ID");
   }
 
-  if (!notes || notes.trim().length < 2) {
-    throw new ApiError(400, "Note is too short");
+  const validResults = ["approve", "reject", "pending"];
+  if (result && !validResults.includes(result)) {
+    throw new ApiError(400, `Result must be one of: ${validResults.join(", ")}`);
   }
 
-  const application = await JobApplication.findById(id);
-  if (!application) {
-    throw new ApiError(404, "Job application not found");
+  if (result === "reject" && !REJECTION_REASONS.includes(rejectionReason)) {
+    throw new ApiError(400, `Invalid rejection reason`);
   }
 
-  // Append a note for the current stage
-  application.stageHistory.push({
-    stage: application.currentStage,
-    updatedBy: userId,
-    notes: notes.trim(),
-  });
+  const application = await JobApplication.findById(applicationId);
+  if (!application) throw new ApiError(404, "Application not found");
+
+  if (["not_hired", "hired"].includes(application.status)) {
+    throw new ApiError(400, "Finalized applications cannot be modified");
+  }
+
+  // // Ensure telephone interview done first
+  // const passedTelephone = application.stageHistory.some(s => s.stage === "telephone_interview");
+  // if (!passedTelephone) {
+  //   throw new ApiError(400, "Telephone Interview must be completed first");
+  // }
+
+  // Append history entry (only if last stage wasn't face_to_face)
+  const lastStage = application.stageHistory.at(-1)?.stage;
+  if (lastStage !== "face_to_face") {
+    application.stageHistory.push({
+      stage: "face_to_face",
+      updatedBy,
+      notes: notes?.trim() || `Face-to-Face Interview ${result || "conducted"}`,
+      updatedAt: new Date(),
+    });
+  }
+
+  if (result === "approve") {
+    application.currentStage = "offered";
+    application.stageHistory.push({
+      stage: "offered",
+      updatedBy,
+      notes: "Candidate passed Face-to-Face Interview",
+      updatedAt: new Date(),
+    });
+  } else if (result === "reject") {
+    application.status = "not_hired";
+    application.rejectionReason = rejectionReason;
+  } else {
+    application.currentStage = "face_to_face";
+  }
 
   await application.save();
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, application, "Stage note added successfully"));
+  res.status(200).json(
+    new ApiResponse(200, application, `Face-to-Face interview ${result || "recorded"}`)
+  );
 });
 
+// PATCH /api/job-applications/:applicationId/virtual-interview
+// Body: { notes?: "Candidate performed well", result?: "approve" | "reject" | "pending", rejectionReason?: "not_qualified" }
+const moveToVirtualInterview = asyncHandler(async (req, res) => {
+  const { applicationId } = req.params;
+  const { notes, result, rejectionReason } = req.body;
+  const updatedBy = req.user?._id;
+
+  // ===== Validate Application ID =====
+  if (!isValidObjectId(applicationId)) {
+    throw new ApiError(400, "Invalid Application ID");
+  }
+
+  // ===== Validate Result =====
+  const validResults = ["approve", "reject", "pending"];
+  if (result && !validResults.includes(result)) {
+    throw new ApiError(400, `Result must be one of: ${validResults.join(", ")}`);
+  }
+
+  // ===== Validate Rejection Reason =====
+  if (result === "reject" && !REJECTION_REASONS.includes(rejectionReason)) {
+    throw new ApiError(400, "Invalid rejection reason");
+  }
+
+  // ===== Fetch Application =====
+  const application = await JobApplication.findById(applicationId);
+  if (!application) {
+    throw new ApiError(404, "Application not found");
+  }
+
+  // ===== Prevent Modification if Finalized =====
+  if (["not_hired", "hired"].includes(application.status)) {
+    throw new ApiError(400, "Finalized applications cannot be modified");
+  }
+
+  // ===== Always allow recording virtual interview =====
+  const lastStage = application.stageHistory.at(-1)?.stage;
+  if (lastStage !== "virtual_interview") {
+    application.stageHistory.push({
+      stage: "virtual_interview",
+      updatedBy,
+      notes: notes?.trim() || `Virtual Interview ${result || "conducted"}`,
+      updatedAt: new Date(),
+    });
+  }
+
+  // ===== Handle Results =====
+  if (result === "approve") {
+    application.currentStage = "virtual_interview"; // Move to virtual if approved
+    application.stageHistory.push({
+      stage: "virtual_interview",
+      updatedBy,
+      notes: notes || "Candidate passed Virtual Interview",
+      updatedAt: new Date(),
+    });
+  } else if (result === "reject") {
+    application.status = "not_hired";
+    application.rejectionReason = rejectionReason;
+  } else {
+    application.currentStage = "virtual_interview";
+  }
+
+  // ===== Save and Respond =====
+  await application.save();
+  res.status(200).json(
+    new ApiResponse(200, application, `Virtual interview ${result || "recorded"}`)
+  );
+}); 
 // PATCH /api/job-applications/:id/reject
 // Body: { rejectionReason: "not_qualified", notes?: "Candidate lacked experience." }
 const rejectAtStage = asyncHandler(async (req, res) => {
@@ -968,7 +1063,8 @@ export {
   createJobApplication,
   checkDuplicateApplication,
   moveToNextStage,
-  addStageNote,
+  moveToFaceToFaceInterview,
+  moveToVirtualInterview,
   rejectAtStage,
   rollbackStage,
   markAsHired,

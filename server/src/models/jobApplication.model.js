@@ -126,12 +126,7 @@ const jobApplicationSchema = new Schema(
       maxlength: 2000,
       trim: true,
     },
-
-    tags: {
-      type: [String],
-      default: [],
-    },
-
+    
     noticePeriodDays: {
       type: Number,
       min: 0,

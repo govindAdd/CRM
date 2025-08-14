@@ -58,7 +58,6 @@ const MoveToNextStageForm = ({ application, onNext }) => {
       notes,
     });
 
-    console.log("Move Stage Response:", res);
     if (res.success) {
       toast.success("Moved to next stage successfully!");
       setIsTransitioning(true);

@@ -71,6 +71,65 @@ export const moveToNextStage = createAsyncThunk(
   }
 );
 
+export const moveToFaceToFaceInterview = createAsyncThunk(
+  "jobApplication/moveToFaceToFaceInterview",
+  async ({ applicationId, notes, result, rejectionReason }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.patch(`/job-applications/${applicationId}/face-to-face`, {
+        notes,
+        result,
+        rejectionReason,
+      });
+      return data.data;
+    } catch (error) {
+      return rejectWithValue({
+        status: error.response?.status,
+        message: error.response?.data?.message || "Face-to-Face move failed",
+      });
+    }
+  }
+);
+export const moveToVirtualInterview = createAsyncThunk(
+  "jobApplication/moveToVirtualInterview",
+  async ({ applicationId, notes, result, rejectionReason }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.patch(`/job-applications/${applicationId}/virtual`, {
+        notes,
+        result,
+        rejectionReason,
+      });
+      return data.data;
+    } catch (error) {
+      return rejectWithValue({
+        status: error.response?.status,
+        message: error.response?.data?.message || "Face-to-Face move failed",
+      });
+    }
+  }
+);
+
+export const markAsHired = createAsyncThunk(
+  "jobApplication/markAsHired",
+  async ({ id, avatarFile }, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("avatar", avatarFile);
+
+      const { data } = await api.patch(`/job-applications/${id}/hire`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true,
+      });
+
+      return data.data;
+    } catch (error) {
+      return rejectWithValue({
+        status: error.response?.status,
+        message: error.response?.data?.message || error.message,
+      });
+    }
+  }
+);
+
 export const rejectAtStage = createAsyncThunk(
   "jobApplication/rejectAtStage",
   async ({ id, reason }, { rejectWithValue }) => {
@@ -88,6 +147,7 @@ export const rejectAtStage = createAsyncThunk(
   }
 );
 
+
 export const rollbackStage = createAsyncThunk(
   "jobApplication/rollbackStage",
   async (id, { rejectWithValue }) => {
@@ -98,21 +158,6 @@ export const rollbackStage = createAsyncThunk(
       return rejectWithValue({
         status: error.response?.status,
         message: error.response?.data?.message || "Rollback failed",
-      });
-    }
-  }
-);
-
-export const markAsHired = createAsyncThunk(
-  "jobApplication/markAsHired",
-  async (id, { rejectWithValue }) => {
-    try {
-      const { data } = await api.patch(`/api/job-applications/${id}/hired`);
-      return data.data;
-    } catch (error) {
-      return rejectWithValue({
-        status: error.response?.status,
-        message: error.response?.data?.message || "Hired failed",
       });
     }
   }
@@ -275,6 +320,8 @@ const jobApplicationSlice = createSlice({
         isAnyOf(
           createJobApplication.fulfilled,
           moveToNextStage.fulfilled,
+          moveToFaceToFaceInterview.fulfilled,
+          moveToVirtualInterview.fulfilled,
           rejectAtStage.fulfilled,
           rollbackStage.fulfilled,
           markAsHired.fulfilled,
