@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, isAnyOf } from "@reduxjs/toolkit";
 import api from "../services/axios";
+import { frameData } from "framer-motion";
 
 // ==================== ASYNC THUNKS ====================
 
@@ -108,19 +109,58 @@ export const moveToVirtualInterview = createAsyncThunk(
   }
 );
 
+// jobApplicationSlice.js
 export const markAsHired = createAsyncThunk(
   "jobApplication/markAsHired",
-  async ({ id, avatarFile }, { rejectWithValue }) => {
+  async (
+    {
+      id,
+      avatarFile,
+      salaryAmount,
+      salaryCurrency,
+      salaryPeriod,
+      keySkills,
+      responsibilities,
+      department,
+    },
+    { rejectWithValue }
+  ) => {
     try {
       const formData = new FormData();
-      formData.append("avatar", avatarFile);
 
-      const { data } = await api.patch(`/job-applications/${id}/hire`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        withCredentials: true,
-      });
+      // ✅ File
+      if (avatarFile) {
+        formData.append("avatar", avatarFile);
+      }
 
-      return data.data;
+      // ✅ Numbers & strings
+      if (salaryAmount !== undefined && salaryAmount !== null) {
+        formData.append("salaryAmount", salaryAmount);
+      }
+      if (salaryCurrency) formData.append("salaryCurrency", salaryCurrency);
+      if (salaryPeriod) formData.append("salaryPeriod", salaryPeriod);
+
+      // ✅ Arrays → stringify before sending
+      if (Array.isArray(keySkills) && keySkills.length > 0) {
+        formData.append("keySkills", JSON.stringify(keySkills));
+      }
+      if (Array.isArray(responsibilities) && responsibilities.length > 0) {
+        formData.append("responsibilities", JSON.stringify(responsibilities));
+      }
+
+      // ✅ Department
+      if (department) formData.append("department", department);
+
+      const { data } = await api.patch(
+        `/job-applications/${id}/hire`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+        }
+      );
+
+      return data.data; // consistent safe data return
     } catch (error) {
       return rejectWithValue({
         status: error.response?.status,

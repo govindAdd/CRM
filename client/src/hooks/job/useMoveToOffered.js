@@ -11,14 +11,23 @@ export const useMoveToOffered = () => {
   );
 
   const hireCandidate = useCallback(
-    async ({ id, avatarFile }) => {
+    async ({ id, avatarFile, salaryAmount, salaryCurrency, salaryPeriod, keySkills, responsibilities, department }) => {
       if (!id) {
         return { success: false, error: "Application ID is required" };
       }
-
       try {
+        // forward all fields collected from the form
         const resultAction = await dispatch(
-          markAsHired({ id, avatarFile })
+          markAsHired({
+            id,
+            avatarFile,
+            salaryAmount,
+            salaryCurrency,
+            salaryPeriod,
+            keySkills,
+            responsibilities,
+            department,
+          })
         );
 
         if (markAsHired.fulfilled.match(resultAction)) {

@@ -2,13 +2,19 @@ import { isValidObjectId } from "mongoose";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { JobApplication, STAGES, ARCHIVE_REASONS, REJECTION_REASONS } from "../models/jobApplication.model.js";
+import {
+  JobApplication,
+  STAGES,
+  ARCHIVE_REASONS,
+  REJECTION_REASONS,
+} from "../models/jobApplication.model.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { generateAccessAndRefreshTokens } from "./user.controller.js";
 import XLSX from "xlsx";
 import { welcomeEmailQueue, rejectionEmailQueue } from "../utils/emailQueue.js";
 import { sendEmail } from "../utils/sendEmail.js";
+import { Membership } from "../models/membership.model.js";
 function generateRandomPassword(fullName = "") {
   const year = new Date().getFullYear().toString().slice(-2); // '25' from 2025
   const firstName = fullName.trim().split(" ")[0] || "user";
@@ -241,7 +247,10 @@ const moveToFaceToFaceInterview = asyncHandler(async (req, res) => {
 
   const validResults = ["approve", "reject", "pending"];
   if (result && !validResults.includes(result)) {
-    throw new ApiError(400, `Result must be one of: ${validResults.join(", ")}`);
+    throw new ApiError(
+      400,
+      `Result must be one of: ${validResults.join(", ")}`
+    );
   }
 
   if (result === "reject" && !REJECTION_REASONS.includes(rejectionReason)) {
@@ -288,9 +297,15 @@ const moveToFaceToFaceInterview = asyncHandler(async (req, res) => {
   }
 
   await application.save();
-  res.status(200).json(
-    new ApiResponse(200, application, `Face-to-Face interview ${result || "recorded"}`)
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        application,
+        `Face-to-Face interview ${result || "recorded"}`
+      )
+    );
 });
 
 // PATCH /api/job-applications/:applicationId/virtual-interview
@@ -308,7 +323,10 @@ const moveToVirtualInterview = asyncHandler(async (req, res) => {
   // ===== Validate Result =====
   const validResults = ["approve", "reject", "pending"];
   if (result && !validResults.includes(result)) {
-    throw new ApiError(400, `Result must be one of: ${validResults.join(", ")}`);
+    throw new ApiError(
+      400,
+      `Result must be one of: ${validResults.join(", ")}`
+    );
   }
 
   // ===== Validate Rejection Reason =====
@@ -356,10 +374,16 @@ const moveToVirtualInterview = asyncHandler(async (req, res) => {
 
   // ===== Save and Respond =====
   await application.save();
-  res.status(200).json(
-    new ApiResponse(200, application, `Virtual interview ${result || "recorded"}`)
-  );
-}); 
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        application,
+        `Virtual interview ${result || "recorded"}`
+      )
+    );
+});
 // PATCH /api/job-applications/:id/reject
 // Body: { rejectionReason: "not_qualified", notes?: "Candidate lacked experience." }
 const rejectAtStage = asyncHandler(async (req, res) => {
@@ -489,7 +513,7 @@ const markAsHired = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Candidate already hired");
   }
 
-  const { fullName, email, phone, gender, dob, designation } = application;
+  const { fullName, email, phone, gender, dob, designation, department } = application;
 
   const trimmedEmail = email.trim().toLowerCase();
   let username = trimmedEmail
@@ -548,6 +572,23 @@ const markAsHired = asyncHandler(async (req, res) => {
     notes: "[HIRED] Finalized and account created",
   });
   await application.save();
+    // Membership creation
+  if (!req.body?.salaryAmount) {
+    throw new ApiError(400, "Salary amount is required");
+  }
+  // After safeUser is prepared:
+  await Membership.create({
+    user: newUser._id,
+    department:req.body.department, // link to dept from application
+    role: "employee",
+    keySkills: req.body.keySkills || [], // frontend sends
+    responsibilities: req.body.responsibilities || [],
+    salary: {
+      amount: req.body?.salaryAmount,
+      currency: req.body.salaryCurrency || "INR",
+      period: req.body.salaryPeriod || "monthly",
+    },
+  });
   // 🎯 Add delayed welcome email to queue (6 days = 518400 sec)
   welcomeEmailQueue.process(async (job) => {
     const { email, fullName, password } = job.data;
