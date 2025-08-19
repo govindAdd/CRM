@@ -16,7 +16,7 @@ import MoveToNextStageForm from "./MoveToNextStageForm";
 import FaceToFaceInterview from "./FaceToFaceInterview";
 import VirtualInterview from "./VirtualInterview";
 import Offered from "./Offered";
-
+import OfferLetter from "./OfferLetter";
 
 // === STAGES mapped to backend keys ===
 const STAGES = [
@@ -82,7 +82,7 @@ const StageWiseView = () => {
         return <Offered application={applicationData} onNext={(pickedStage) => setStage(pickedStage)} setParams={setParams} />;
       case "onboarded":
         return (
-          <Placeholder text="🚀 Onboarding checklist initiation in progress..." />
+          <OfferLetter />
         );
       default:
         return <Placeholder text="Coming soon..." />;

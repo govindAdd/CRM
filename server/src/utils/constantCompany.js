@@ -2,6 +2,7 @@
 export const COMPANY_INFO = Object.freeze({
   NAME: "ADD-GOD",
   LEGAL_NAME: "ADD-GOD Digital Pvt. Ltd.",
+  ADDRESS: "289, 1st Floor Chaitanya Vihar Phase 2, Main Burja Road Vrindavan- 281121",
   ESTABLISHED_YEAR: 2024,
   COMPANY_TYPE: "Self-Owned",
   INDUSTRY: "Technology, Information and Internet",
