@@ -476,7 +476,7 @@ const deleteUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const requester = req.user;
 
-  // Fetch the target user
+  // 📌 Fetch the target user
   const targetUser = await User.findById(id);
   if (!targetUser) {
     throw new ApiError(404, "User not found");
@@ -498,18 +498,19 @@ const deleteUser = asyncHandler(async (req, res) => {
     await deleteOnCloudinary(targetUser.avatar);
   }
 
+  // 🧹 Delete related memberships
+  await Membership.deleteMany({ user: id });
+
   // ❌ Hard delete from DB
   await User.findByIdAndDelete(id);
 
-  res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        {},
-        `User '${targetUser.fullName}' deleted successfully`
-      )
-    );
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {},
+      `User '${targetUser.fullName}' and related memberships deleted successfully`
+    )
+  );
 });
 
 // ===================== GET USER DEPARTMENTS =====================

@@ -94,11 +94,11 @@ function OfferLetter({ candidate }) {
                 }}
               />
             )}
-            <div className="flex flex-col leading-tight font-god">
-              <span className="text-3xl font-bold" style={{ color: "#FF9500" }}>
+            <div className="flex flex-col leading-tight">
+              <span className="text-3xl font-bold font-god tracking-wider text-[#ff9500]">
                 ADD GOD
               </span>
-              <span className="text-xs text-gray-600">
+              <span className="text-xs text-gray-600 font-god">
                 Your AD and Tech Partner
               </span>
             </div>
