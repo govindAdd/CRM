@@ -11,7 +11,7 @@ export const useMoveToOffered = () => {
   );
 
   const hireCandidate = useCallback(
-    async ({ id, avatarFile, salaryAmount, salaryCurrency, salaryPeriod, keySkills, responsibilities, department }) => {
+    async ({ id, avatarFile, salaryAmount, salaryCurrency, salaryPeriod, keySkills, responsibilities, department, designation }) => {
       if (!id) {
         return { success: false, error: "Application ID is required" };
       }
@@ -25,6 +25,7 @@ export const useMoveToOffered = () => {
             salaryCurrency,
             salaryPeriod,
             keySkills,
+            designation,
             responsibilities,
             department,
           })

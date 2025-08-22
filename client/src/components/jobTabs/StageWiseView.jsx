@@ -82,7 +82,7 @@ const StageWiseView = () => {
         return <Offered application={applicationData} onNext={(pickedStage) => setStage(pickedStage)} setParams={setParams} />;
       case "onboarded":
         return (
-          <OfferLetter />
+          <Placeholder text="Offer Letter Component Placeholder" />
         );
       default:
         return <Placeholder text="Coming soon..." />;

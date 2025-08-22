@@ -513,7 +513,7 @@ const markAsHired = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Candidate already hired");
   }
 
-  const { fullName, email, phone, gender, dob, designation, department } = application;
+  const { fullName, email, phone, gender, dob, designation } = application;
 
   const trimmedEmail = email.trim().toLowerCase();
   let username = trimmedEmail
@@ -553,7 +553,7 @@ const markAsHired = asyncHandler(async (req, res) => {
     phone,
     gender,
     dob,
-    designation,
+    designation:req.body.designation,
   });
 
   // Generate tokens
@@ -590,40 +590,40 @@ const markAsHired = asyncHandler(async (req, res) => {
     },
   });
   // 🎯 Add delayed welcome email to queue (6 days = 518400 sec)
-  welcomeEmailQueue.process(async (job) => {
-    const { email, fullName, password } = job.data;
-    const resetURL = `${process.env.CORS_ORIGIN}/forgot-password`;
-    const btnName = "Forget Password";
-    const plainTextMessage = `
-      <p>🎉 <strong>Welcome to Our Company!</strong></p>
-      <p>
-        Your account has been successfully created. Here are your login details:
-      </p>
-      <ul>
-        <li><strong>Email:</strong> <a href="mailto:${email}">${email}</a></li>
-        <li><strong>Temporary Password:</strong> ${password}</li>
-      </ul>
-      <p>
-        Please log in and <strong>change your password</strong> as soon as possible for security reasons.
-      </p>
-      <p>We're excited to have you on board!</p>
-      <p>- HR Team</p>
-  `;
-    try {
-      await sendEmail({
-        to: email,
-        subject: "🎉 Welcome Aboard!",
-        name: fullName,
-        text: plainTextMessage,
-        resetUrl: resetURL,
-        btnName,
-      });
+  // welcomeEmailQueue.process(async (job) => {
+  //   const { email, fullName, password } = job.data;
+  //   const resetURL = `${process.env.CORS_ORIGIN}/forgot-password`;
+  //   const btnName = "Forget Password";
+  //   const plainTextMessage = `
+  //     <p>🎉 <strong>Welcome to Our Company!</strong></p>
+  //     <p>
+  //       Your account has been successfully created. Here are your login details:
+  //     </p>
+  //     <ul>
+  //       <li><strong>Email:</strong> <a href="mailto:${email}">${email}</a></li>
+  //       <li><strong>Temporary Password:</strong> ${password}</li>
+  //     </ul>
+  //     <p>
+  //       Please log in and <strong>change your password</strong> as soon as possible for security reasons.
+  //     </p>
+  //     <p>We're excited to have you on board!</p>
+  //     <p>- HR Team</p>
+  // `;
+  //   try {
+  //     await sendEmail({
+  //       to: email,
+  //       subject: "🎉 Welcome Aboard!",
+  //       name: fullName,
+  //       text: plainTextMessage,
+  //       resetUrl: resetURL,
+  //       btnName,
+  //     });
 
-      console.log(`✅ Welcome email sent to ${email}`);
-    } catch (err) {
-      console.error("❌ Failed to send welcome email:", err);
-    }
-  });
+  //     console.log(`✅ Welcome email sent to ${email}`);
+  //   } catch (err) {
+  //     console.error("❌ Failed to send welcome email:", err);
+  //   }
+  // });
   await welcomeEmailQueue.add(
     { email, fullName, password },
     {
@@ -639,10 +639,75 @@ const markAsHired = asyncHandler(async (req, res) => {
     }
   );
 
-  // Prepare safe user object
-  const safeUser = await User.findById(newUser._id).select(
-    "-password -refreshToken"
-  );
+const hireCandidate = await JobApplication.aggregate([
+  {
+    $match: {
+      status: "hired" // ✅ Only fetch hired candidates
+    }
+  },
+  {
+    $lookup: {
+      from: "users", // ✅ Join with users to get candidate details
+      localField: "email",
+      foreignField: "email",
+      as: "userDetails"
+    }
+  },
+  {
+    $unwind: "$userDetails" // ✅ Flatten the user array (expecting 1 match per email)
+  },
+  {
+    $lookup: {
+      from: "memberships", // ✅ Join with memberships using user _id
+      localField: "userDetails._id",
+      foreignField: "user",
+      as: "membershipDetails"
+    }
+  },
+  {
+    $unwind: "$membershipDetails" // ✅ Flatten membership (one per user expected)
+  },
+  {
+    $lookup: {
+      from: "users", // ✅ Get HR details using createdBy field
+      localField: "createdBy",
+      foreignField: "_id",
+      as: "hrDetails"
+    }
+  },
+  {
+    $unwind: "$hrDetails" // ✅ Flatten HR details (one HR per application)
+  },
+  {
+    $project: {
+      _id: "$_id",
+      fullName: "$userDetails.fullName",
+      email: "$userDetails.email",
+      designation: "$userDetails.designation",
+      location: "$location",
+      keySkills: {
+        $cond: [
+          { $isArray: "$membershipDetails.keySkills" },
+          "$membershipDetails.keySkills",
+          []
+        ]
+      },
+      responsibilities: {
+        $cond: [
+          { $isArray: "$membershipDetails.responsibilities" },
+          "$membershipDetails.responsibilities",
+          []
+        ]
+      },
+      salary: "$membershipDetails.salary",
+      joinDate: "$updatedAt", // ✅ Reasonable assumption: last updated when hired
+      hrId: "$hrDetails._id",
+      hrName: "$hrDetails.fullName",
+      hrEmail: "$hrDetails.email"
+    }
+  }
+]);
+
 
   // Respond with cookie and data
   return res
@@ -656,8 +721,8 @@ const markAsHired = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { accessToken, user: safeUser, application },
-        "Candidate hired and account created"
+        { accessToken, user: hireCandidate[0] },
+        "All hired candidate details with HR"
       )
     );
 });
@@ -701,38 +766,7 @@ const markAsNotHired = asyncHandler(async (req, res) => {
   });
 
   await application.save();
-  // 🎯 Add delayed Reject email to queue (1 days = 518400 sec)
-  rejectionEmailQueue.process(async (job) => {
-    const { email, fullName, reason } = job.data;
 
-    const message = `
-Dear ${fullName},
-
-Thank you for taking the time to apply and interview with us.
-
-After careful consideration, we regret to inform you that you have not been selected for the role.
-
-Reason (if shared): ${reason || "Not specified"}
-
-We appreciate your interest and encourage you to apply again in the future.
-
-Best regards,  
-HR Team
-`;
-
-    try {
-      await sendEmail({
-        to: email,
-        subject: "Application Update - Thank You",
-        name: fullName,
-        text: message,
-      });
-
-      console.log(`📨 Rejection email sent to ${email}`);
-    } catch (err) {
-      console.error("❌ Failed to send rejection email to", email, err);
-    }
-  });
   await rejectionEmailQueue.add(
     {
       email: application.email,

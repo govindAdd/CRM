@@ -122,6 +122,7 @@ export const markAsHired = createAsyncThunk(
       keySkills,
       responsibilities,
       department,
+      designation
     },
     { rejectWithValue }
   ) => {
@@ -147,7 +148,8 @@ export const markAsHired = createAsyncThunk(
       if (Array.isArray(responsibilities) && responsibilities.length > 0) {
         formData.append("responsibilities", JSON.stringify(responsibilities));
       }
-
+      // ✅ designation
+      if (designation) formData.append("designation", designation);
       // ✅ Department
       if (department) formData.append("department", department);
 

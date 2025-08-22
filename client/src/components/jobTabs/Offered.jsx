@@ -7,7 +7,7 @@ import { useMoveToOffered } from "../../hooks/job/useMoveToOffered";
 import { CheckCircle, Loader2, ImagePlus, XCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import { useFetchAllDepartments } from "../../hooks/department/useFetchAllDepartments";
-
+import OfferLetter from "./OfferLetter";
 // ✅ Validation schema
 const schema = yup.object({
   avatar: yup
@@ -53,12 +53,13 @@ function Offered({ application, onNext, setParams }) {
   const { hireCandidate, loading, error } = useMoveToOffered();
   const [visible, setVisible] = useState(true);
   const [previews, setPreviews] = useState([]);
+  const [offerResult, setOfferResult] = useState(null);
 
   const handleSuccess = (nextStage) => {
     setVisible(false);
     setTimeout(() => {
-      onNext?.(nextStage);
-      setParams({ stage: nextStage });
+      //onNext?.(nextStage);
+      //setParams({ stage: nextStage });
       setVisible(true);
       reset();
       setPreviews([]);
@@ -73,6 +74,7 @@ function Offered({ application, onNext, setParams }) {
       salaryAmount: data.salaryAmount,
       salaryCurrency: data.salaryCurrency,
       salaryPeriod: data.salaryPeriod,
+      designation: data.designation,
       department: data.department,
       keySkills: data.keySkills
         ? data.keySkills.split(",").map((s) => s.trim())
@@ -81,12 +83,13 @@ function Offered({ application, onNext, setParams }) {
         ? data.responsibilities.split(",").map((r) => r.trim())
         : [],
     };
-    console.log("Submitting offer with payload:", payload);
 
     const result = await hireCandidate(payload);
+    console.log("Hire result:", result.data?.user);
     if (result?.success) {
       toast.success("Candidate moved to Onboarding stage!");
-      handleSuccess("onboarding");
+      setOfferResult(result?.data);
+      //handleSuccess("onboarding");
     } else {
       toast.error(result?.error || "Failed to hire candidate");
     }
@@ -250,36 +253,66 @@ function Offered({ application, onNext, setParams }) {
               )}
             </div>
 
-            {/* Department */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Assign Department <span className="text-red-500">*</span>
-              </label>
-              <Controller
-                name="department"
-                control={control}
-                render={({ field }) => (
-                  <select
-                    {...field}
-                    className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600
-                               dark:bg-gray-900 dark:text-gray-100
-                               shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm
-                               h-11 border px-4"
-                  >
-                    <option value="">-- Select Department --</option>
-                    {departments?.map((dept) => (
-                      <option key={dept._id} value={dept._id}>
-                        {dept.name} ({dept.code})
-                      </option>
-                    ))}
-                  </select>
+            {/* Department & Designation in one line */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Department */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Assign Department <span className="text-red-500">*</span>
+                </label>
+                <Controller
+                  name="department"
+                  control={control}
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600
+                     dark:bg-gray-900 dark:text-gray-100
+                     shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm
+                     h-11 border px-4"
+                    >
+                      <option value="">-- Select Department --</option>
+                      {departments?.map((dept) => (
+                        <option key={dept._id} value={dept._id}>
+                          {dept.name} ({dept.code})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+                {errors.department && (
+                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">
+                    {errors.department.message}
+                  </p>
                 )}
-              />
-              {errors.department && (
-                <p className="text-red-600 dark:text-red-400 text-sm mt-1">
-                  {errors.department.message}
-                </p>
-              )}
+              </div>
+
+              {/* Designation */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Designation <span className="text-red-500">*</span>
+                </label>
+                <Controller
+                  name="designation"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      type="text"
+                      {...field}
+                      placeholder="e.g. Software Engineer"
+                      className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600
+                     dark:bg-gray-900 dark:text-gray-100
+                     shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm
+                     h-11 border px-4"
+                    />
+                  )}
+                />
+                {errors.designation && (
+                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">
+                    {errors.designation.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Salary Section */}
@@ -372,7 +405,10 @@ function Offered({ application, onNext, setParams }) {
             {/* Key Skills */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Key Skills <span className="text-gray-500 dark:text-gray-400 font-normal">(comma separated)</span>
+                Key Skills{" "}
+                <span className="text-gray-500 dark:text-gray-400 font-normal">
+                  (comma separated)
+                </span>
               </label>
               <Controller
                 name="keySkills"
@@ -394,7 +430,10 @@ function Offered({ application, onNext, setParams }) {
             {/* Responsibilities */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Responsibilities <span className="text-gray-500 dark:text-gray-400 font-normal">(comma separated)</span>
+                Responsibilities{" "}
+                <span className="text-gray-500 dark:text-gray-400 font-normal">
+                  (comma separated)
+                </span>
               </label>
               <Controller
                 name="responsibilities"
@@ -416,7 +455,9 @@ function Offered({ application, onNext, setParams }) {
             {error && (
               <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-3 flex items-start gap-2">
                 <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
+                <p className="text-red-700 dark:text-red-300 text-sm">
+                  {error}
+                </p>
               </div>
             )}
 
@@ -439,11 +480,16 @@ function Offered({ application, onNext, setParams }) {
               ) : (
                 <>
                   <CheckCircle className="w-5 h-5 mr-2" />
-                  Hire Candidate
+                  Offer Letter
                 </>
               )}
             </motion.button>
           </form>
+          {offerResult && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+              <OfferLetter off={offerResult}/>
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
