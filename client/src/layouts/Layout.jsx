@@ -3,10 +3,11 @@ import { useLocation } from "react-router-dom";
 import { FiMenu } from "react-icons/fi";
 import Sidebar from "../components/Sidebar";
 import { Heart } from "lucide-react";
-
+import  useCompanyInfo from "../hooks/info/useCompanyInfo";
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { companyInfo } = useCompanyInfo();
 
   // Close sidebar on route change
   useEffect(() => {
@@ -65,7 +66,7 @@ const Layout = ({ children }) => {
               <p className="text-xs md:text-sm text-zinc-500/90 dark:text-zinc-400/80">
                 © 2025{" "}
                 <span className="font-god tracking-widest text-zinc-700 dark:text-zinc-200">
-                  Add God PVT LTD
+                  {companyInfo?.LEGAL_NAME}
                 </span>
                 . All rights reserved.
                 <span className="hidden md:inline"> • </span>

@@ -22,15 +22,18 @@ const DepartmentForm = ({ onSubmit, isLoading }) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 w-full max-w-2xl text-gray-800"
+      className="space-y-6 w-full max-w-2xl text-gray-800 dark:text-gray-100"
     >
       {/* Department Name */}
       <div>
-        <label htmlFor="name" className="block text-sm font-semibold mb-1 tracking-wide text-gray-700">
+        <label
+          htmlFor="name"
+          className="block text-sm font-semibold mb-1 tracking-wide text-gray-700 dark:text-gray-300"
+        >
           Department Name
         </label>
-        <div className="flex items-center gap-3 bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm">
-          <FiCpu className="text-purple-700 text-lg" />
+        <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-2xl px-4 py-3 shadow-sm">
+          <FiCpu className="text-purple-700 dark:text-purple-400 text-lg" />
           <input
             type="text"
             name="name"
@@ -39,7 +42,7 @@ const DepartmentForm = ({ onSubmit, isLoading }) => {
             required
             value={formData.name}
             onChange={handleChange}
-            className="flex-1 bg-transparent placeholder:text-gray-400 text-sm outline-none"
+            className="flex-1 bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm outline-none text-gray-800 dark:text-gray-100"
             placeholder="e.g. Research & Development"
           />
         </div>
@@ -47,11 +50,14 @@ const DepartmentForm = ({ onSubmit, isLoading }) => {
 
       {/* Department Code */}
       <div>
-        <label htmlFor="code" className="block text-sm font-semibold mb-1 tracking-wide text-gray-700">
+        <label
+          htmlFor="code"
+          className="block text-sm font-semibold mb-1 tracking-wide text-gray-700 dark:text-gray-300"
+        >
           Department Code
         </label>
-        <div className="flex items-center gap-3 bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm">
-          <FiCode className="text-purple-700 text-lg" />
+        <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-2xl px-4 py-3 shadow-sm">
+          <FiCode className="text-purple-700 dark:text-purple-400 text-lg" />
           <input
             type="text"
             name="code"
@@ -59,7 +65,7 @@ const DepartmentForm = ({ onSubmit, isLoading }) => {
             required
             value={formData.code}
             onChange={handleChange}
-            className="flex-1 bg-transparent uppercase placeholder:text-gray-400 text-sm outline-none"
+            className="flex-1 bg-transparent uppercase placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm outline-none text-gray-800 dark:text-gray-100"
             placeholder="e.g. RND"
           />
         </div>
@@ -67,18 +73,21 @@ const DepartmentForm = ({ onSubmit, isLoading }) => {
 
       {/* Description */}
       <div>
-        <label htmlFor="description" className="block text-sm font-semibold mb-1 tracking-wide text-gray-700">
+        <label
+          htmlFor="description"
+          className="block text-sm font-semibold mb-1 tracking-wide text-gray-700 dark:text-gray-300"
+        >
           Description
         </label>
-        <div className="flex items-start gap-3 bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm">
-          <FiMessageSquare className="text-purple-700 mt-1 text-lg" />
+        <div className="flex items-start gap-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-2xl px-4 py-3 shadow-sm">
+          <FiMessageSquare className="text-purple-700 dark:text-purple-400 mt-1 text-lg" />
           <textarea
             name="description"
             id="description"
             rows={3}
             value={formData.description}
             onChange={handleChange}
-            className="flex-1 bg-transparent resize-none placeholder:text-gray-400 text-sm outline-none"
+            className="flex-1 bg-transparent resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm outline-none text-gray-800 dark:text-gray-100"
             placeholder="Describe the department’s responsibilities..."
           />
         </div>

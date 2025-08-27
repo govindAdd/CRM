@@ -20,7 +20,6 @@ const DepartmentEmployees = ({ departmentId }) => {
     empStatus,
     empError,
     total,
-    currentPage,
   } = useFetchEmployeesInDepartment({
     departmentId,
     page,
@@ -44,8 +43,8 @@ const DepartmentEmployees = ({ departmentId }) => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white px-6 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-purple-400">
+    <div className="min-h-screen bg-white text-gray-900 dark:bg-black dark:text-white px-6 py-8">
+      <h1 className="text-3xl font-bold mb-6 text-purple-600 dark:text-purple-400">
         Employees in {departmentMeta?.name} ({departmentMeta?.code})
       </h1>
 
@@ -56,12 +55,12 @@ const DepartmentEmployees = ({ departmentId }) => {
           placeholder="Search employees..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="bg-gray-800 text-white px-4 py-2 rounded-md w-full sm:w-64 focus:outline-none border border-purple-500"
+          className="bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white px-4 py-2 rounded-md w-full sm:w-64 focus:outline-none border border-purple-500"
         />
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
-          className="bg-gray-800 text-white px-3 py-2 rounded-md border border-purple-500"
+          className="bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white px-3 py-2 rounded-md border border-purple-500"
         >
           <option value="fullName">Full Name</option>
           <option value="email">Email</option>
@@ -71,7 +70,7 @@ const DepartmentEmployees = ({ departmentId }) => {
         <select
           value={sortOrder}
           onChange={(e) => setSortOrder(e.target.value)}
-          className="bg-gray-800 text-white px-3 py-2 rounded-md border border-purple-500"
+          className="bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white px-3 py-2 rounded-md border border-purple-500"
         >
           <option value="asc">Asc</option>
           <option value="desc">Desc</option>
@@ -79,7 +78,7 @@ const DepartmentEmployees = ({ departmentId }) => {
         <select
           value={limit}
           onChange={(e) => setLimit(Number(e.target.value))}
-          className="bg-gray-800 text-white px-3 py-2 rounded-md border border-purple-500"
+          className="bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white px-3 py-2 rounded-md border border-purple-500"
         >
           <option value={5}>5</option>
           <option value={10}>10</option>
@@ -88,9 +87,9 @@ const DepartmentEmployees = ({ departmentId }) => {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-700">
-        <table className="min-w-full bg-gray-900 text-white">
-          <thead className="bg-purple-800 text-left">
+      <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-gray-700">
+        <table className="min-w-full bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
+          <thead className="bg-purple-600 dark:bg-purple-800 text-left text-white">
             <tr>
               <th className="p-3">Avatar</th>
               <th className="p-3">Full Name</th>
@@ -109,19 +108,19 @@ const DepartmentEmployees = ({ departmentId }) => {
               [...Array(limit)].map((_, i) => (
                 <tr key={i} className="animate-pulse">
                   <td className="p-3 col-span-10" colSpan={10}>
-                    <div className="h-6 bg-gray-700 rounded w-full"></div>
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
                   </td>
                 </tr>
               ))
             ) : employees.length === 0 ? (
               <tr>
-                <td colSpan={10} className="text-center p-6 text-gray-400">
+                <td colSpan={10} className="text-center p-6 text-gray-500 dark:text-gray-400">
                   No employees found.
                 </td>
               </tr>
             ) : (
               employees.map((emp, idx) => (
-                <tr key={emp.userId} className="hover:bg-gray-800 transition">
+                <tr key={emp.userId} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                   <td className="p-3">
                     <img
                       src={emp.avatar}
@@ -134,14 +133,14 @@ const DepartmentEmployees = ({ departmentId }) => {
                   <td className="p-3">{emp.email}</td>
                   <td className="p-3">{emp.phone}</td>
                   <td className="p-3">
-                    <span className="bg-purple-600 text-sm px-2 py-1 rounded-full uppercase">
+                    <span className="bg-purple-500 dark:bg-purple-600 text-white text-sm px-2 py-1 rounded-full uppercase">
                       {emp.role}
                     </span>
                   </td>
                   <td className="p-3">{emp.designation}</td>
                   <td className="p-3">
                     <span
-                      className={`px-2 py-1 text-xs rounded-full ${
+                      className={`px-2 py-1 text-xs rounded-full text-white ${
                         emp.isActive ? "bg-green-600" : "bg-red-600"
                       }`}
                     >
@@ -154,7 +153,7 @@ const DepartmentEmployees = ({ departmentId }) => {
                   <td className="relative p-3">
                     <button
                       onClick={() => toggleMenu(idx)}
-                      className="hover:text-purple-400"
+                      className="hover:text-purple-500"
                     >
                       <FiMoreVertical size={20} />
                     </button>
@@ -163,12 +162,12 @@ const DepartmentEmployees = ({ departmentId }) => {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
-                        className="absolute right-0 mt-2 w-40 bg-gray-800 border border-purple-500 rounded shadow-lg z-10"
+                        className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 border border-purple-500 rounded shadow-lg z-10"
                       >
-                        <ul className="text-sm text-white">
-                          <li className="px-4 py-2 hover:bg-gray-700 cursor-pointer">View Profile</li>
-                          <li className="px-4 py-2 hover:bg-gray-700 cursor-pointer">Edit</li>
-                          <li className="px-4 py-2 hover:bg-gray-700 cursor-pointer text-red-400">Deactivate</li>
+                        <ul className="text-sm text-gray-900 dark:text-white">
+                          <li className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">View Profile</li>
+                          <li className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">Edit</li>
+                          <li className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-red-500 dark:text-red-400">Deactivate</li>
                         </ul>
                       </motion.div>
                     )}
@@ -185,18 +184,18 @@ const DepartmentEmployees = ({ departmentId }) => {
         <button
           onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
           disabled={page === 1}
-          className="flex items-center gap-1 bg-purple-700 px-4 py-2 rounded hover:bg-purple-800 disabled:opacity-50"
+          className="flex items-center gap-1 bg-purple-600 dark:bg-purple-700 px-4 py-2 rounded hover:bg-purple-700 dark:hover:bg-purple-800 disabled:opacity-50 text-white"
         >
           <FaChevronLeft />
           Previous
         </button>
-        <span className="text-lg text-purple-300">
+        <span className="text-lg text-purple-600 dark:text-purple-300">
           Page {page} of {Math.ceil(total / limit)}
         </span>
         <button
           onClick={() => setPage((prev) => prev + 1)}
           disabled={page * limit >= total}
-          className="flex items-center gap-1 bg-purple-700 px-4 py-2 rounded hover:bg-purple-800 disabled:opacity-50"
+          className="flex items-center gap-1 bg-purple-600 dark:bg-purple-700 px-4 py-2 rounded hover:bg-purple-700 dark:hover:bg-purple-800 disabled:opacity-50 text-white"
         >
           Next <FaChevronRight />
         </button>

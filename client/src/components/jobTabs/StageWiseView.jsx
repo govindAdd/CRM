@@ -17,7 +17,7 @@ import FaceToFaceInterview from "./FaceToFaceInterview";
 import VirtualInterview from "./VirtualInterview";
 import Offered from "./Offered";
 import OfferLetter from "./OfferLetter";
-
+//import Sample from "./Sample";
 // === STAGES mapped to backend keys ===
 const STAGES = [
   { key: "application_review", label: "Create", icon: FilePlus },
@@ -83,6 +83,7 @@ const StageWiseView = () => {
       case "onboarded":
         return (
           <Placeholder text="Offer Letter Component Placeholder" />
+          // <Sample />
         );
       default:
         return <Placeholder text="Coming soon..." />;

@@ -12,6 +12,7 @@ import { Link, useNavigate } from "react-router-dom";
 import useRegister from "../../hooks/user/useSignUp";
 import logo from "../../assets/logoNew.png";
 import bannerImage from "../../assets/banner-image.png";
+import useCompanyInfo from "../../hooks/info/useCompanyInfo";
 
 // Validation schema
 const schema = yup.object().shape({
@@ -53,6 +54,7 @@ const RegisterForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const avatarRegister = register("avatar");
+  const { companyInfo } = useCompanyInfo();
 
   useLayoutEffect(() => {
     return () => URL.revokeObjectURL(avatarPreview ?? "");
@@ -101,24 +103,24 @@ const RegisterForm = () => {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-10 bg-cover bg-center relative"
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-10 bg-cover bg-center relative dark:bg-gray-900 transition-colors"
       style={{ backgroundImage: `url(${bannerImage})` }}
     >
-      <div className="absolute inset-0 bg-white/30 backdrop-blur-sm z-0" />
-      <div className="relative z-10 w-full max-w-4xl bg-white bg-opacity-90 rounded-3xl shadow-xl p-8 md:p-12 overflow-hidden">
+      <div className="absolute inset-0 bg-white/30 dark:bg-black/40 backdrop-blur-sm z-0 transition-colors" />
+      <div className="relative z-10 w-full max-w-4xl bg-white dark:bg-gray-800 bg-opacity-90 dark:bg-opacity-90 rounded-3xl shadow-xl p-8 md:p-12 overflow-hidden transition-colors">
         
         {/* Header */}
         <div className="text-center mb-6">
           <img
-            src={logo}
+            src={companyInfo?.LOGO_URL}
             alt="Logo"
             className="h-12 w-auto mx-auto mb-1 object-contain"
             loading="lazy"
             decoding="async"
             fetchpriority="low"
           />
-          <h2 className="text-3xl font-digi text-gray-800">Create Account</h2>
-          <p className="text-gray-500 text-sm font-digi">Sign up to get started</p>
+          <h2 className="text-3xl font-digi text-gray-800 dark:text-gray-100">Create Account</h2>
+          <p className="text-gray-500 dark:text-gray-300 text-sm font-digi">Sign up to get started</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" encType="multipart/form-data" noValidate>
@@ -132,7 +134,7 @@ const RegisterForm = () => {
                   className="w-20 h-20 rounded-full object-cover border shadow"
                 />
               ) : (
-                <div className="w-20 h-20 bg-gray-100 border rounded-full flex items-center justify-center text-gray-400 shadow">
+                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 border rounded-full flex items-center justify-center text-gray-400 dark:text-gray-300 shadow">
                   <FaUser size={28} />
                 </div>
               )}
@@ -146,7 +148,7 @@ const RegisterForm = () => {
               />
             </label>
             <div>
-              <p className="text-sm font-medium">Upload Avatar <span className="text-red-500">*</span></p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Upload Avatar <span className="text-red-500">*</span></p>
               {errors.avatar && <p className="text-xs text-red-500">{errors.avatar.message}</p>}
             </div>
           </div>
@@ -155,16 +157,16 @@ const RegisterForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {inputFields.map(({ label, name, type = "text", icon }) => (
               <div key={name}>
-                <label htmlFor={`input_${name}`} className="text-sm font-medium font-digi text-gray-700 mb-1 block">
+                <label htmlFor={`input_${name}`} className="text-sm font-medium font-digi text-gray-700 dark:text-gray-200 mb-1 block">
                   {label}{schema.fields[name]?.exclusiveTests?.required && <span className="text-red-500"> *</span>}
                 </label>
-                <div className="flex items-center px-4 py-3 rounded-xl border shadow-sm gap-2 bg-white">
+                <div className="flex items-center px-4 py-3 rounded-xl border shadow-sm gap-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 transition-colors">
                   {icon}
                   {type === "select" ? (
                     <select
                       id={`input_${name}`}
                       {...register(name)}
-                      className="flex-1 outline-none text-sm font-digi bg-transparent"
+                      className="flex-1 outline-none text-sm font-digi bg-transparent text-gray-800 dark:text-gray-100"
                       defaultValue=""
                     >
                       <option value="" disabled>Select {label}</option>
@@ -178,7 +180,7 @@ const RegisterForm = () => {
                       type={type}
                       {...register(name)}
                       placeholder={`Enter your ${label.toLowerCase()}`}
-                      className="flex-1 outline-none text-sm bg-transparent"
+                      className="flex-1 outline-none text-sm bg-transparent text-gray-800 dark:text-gray-100"
                     />
                   )}
                 </div>
@@ -190,25 +192,25 @@ const RegisterForm = () => {
           </div>
 
           {/* Password & Confirm Password */}
-          {["password", "confirmPassword"].map((field, idx) => (
+          {["password", "confirmPassword"].map((field) => (
             <div key={field}>
-              <label htmlFor={`input_${field}`} className="text-sm font-digi font-medium text-gray-700 mb-1 block">
+              <label htmlFor={`input_${field}`} className="text-sm font-digi font-medium text-gray-700 dark:text-gray-200 mb-1 block">
                 {field === "password" ? "Password" : "Confirm Password"} <span className="text-red-500">*</span>
               </label>
-              <div className="flex items-center px-4 py-3 bg-white rounded-xl border shadow-sm gap-2">
+              <div className="flex items-center px-4 py-3 bg-white dark:bg-gray-700 rounded-xl border shadow-sm gap-2 border-gray-300 dark:border-gray-600 transition-colors">
                 <FaLock className="text-purple-600 font-digi" />
                 <input
                   id={`input_${field}`}
                   type={showPassword ? "text" : "password"}
                   {...register(field)}
                   placeholder={`Enter your ${field === "password" ? "" : "confirm "}password`}
-                  className="flex-1 outline-none text-sm bg-transparent"
+                  className="flex-1 outline-none text-sm bg-transparent text-gray-800 dark:text-gray-100"
                 />
                 {field === "password" && (
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-100"
                   >
                     {showPassword ? <FiEyeOff /> : <FiEye />}
                   </button>
@@ -231,9 +233,9 @@ const RegisterForm = () => {
         </form>
 
         {/* Footer */}
-        <p className="text-center text-sm font-digi text-gray-600 mt-6">
+        <p className="text-center text-sm font-digi text-gray-600 dark:text-gray-300 mt-6">
           Already have an account?{" "}
-          <Link to="/login" className="text-purple-600 font-medium hover:underline font-digi ">Sign In</Link>
+          <Link to="/login" className="text-purple-600 dark:text-purple-400 font-medium hover:underline font-digi">Sign In</Link>
         </p>
       </div>
     </div>
