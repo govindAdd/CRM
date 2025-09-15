@@ -1,16 +1,15 @@
-import { useDispatch, useSelector, shallowEqual } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useCallback, useMemo } from "react";
 import { fetchCompanyInfo } from "../../store/authSlice";
 
 const useCompanyInfo = () => {
   const dispatch = useDispatch();
 
-  // Select fields independently (no new object each render)
   const companyInfo = useSelector((state) => state.auth?.companyInfo);
   const loading = useSelector((state) => state.auth?.loading);
   const error = useSelector((state) => state.auth?.error);
 
-  // Auto-fetch if missing
+  // Auto-fetch only once (or when missing)
   useEffect(() => {
     if (!companyInfo && !loading) {
       dispatch(fetchCompanyInfo());
@@ -24,7 +23,6 @@ const useCompanyInfo = () => {
     }
   }, [dispatch, loading]);
 
-  // Derived state with memoization
   return useMemo(
     () => ({
       companyInfo,

@@ -70,7 +70,11 @@ const attendanceSchema = new Schema(
     },
     expiresAt: {
       type: Date,
-      default: () => new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      default: () => {
+        const date = new Date();
+        date.setMonth(date.getMonth() + 4); // adds 4 calendar months
+        return date;
+      },
       index: { expires: 0 },
     },
   },

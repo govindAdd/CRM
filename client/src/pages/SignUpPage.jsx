@@ -3,10 +3,10 @@ import RegisterForm from "../components/forms/SignUpForm";
 
 const RegisterPage = () => {
   return (
-    <div className=" bg-gray-100 dark:bg-gray-900 ">
+    <>
       <RegisterForm />
       {/* <FormGoogleSignUP /> */}
-    </div>
+    </>
   );
 };
 

@@ -394,14 +394,13 @@ const getAllAttendance = asyncHandler(async (req, res) => {
     Attendance.find(filter)
       .sort(sortOptions)
       .skip(skip)
-      .limit(limit)
+      // .limit(limit)
       .populate("employee", "fullName avatar username role")
       .populate("department", "name"),
     Attendance.countDocuments(filter),
   ]);
-
+console.log(records.length);
   const totalPages = Math.ceil(totalRecords / limit);
-
   // ===================== 6️⃣ Respond =====================
   return res.status(200).json(
     new ApiResponse(

@@ -16,6 +16,7 @@ import HrPage from "./pages/HrPage";
 import JobApplicationPage from "./pages/JobApplicationPage";
 import AuthInitializer from "./components/AuthInitializer";
 
+
 import "./App.css";
 function App() {
   return (

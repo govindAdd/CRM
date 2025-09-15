@@ -1,7 +1,6 @@
 //import {companyLogo} from "../assets/image/logoNew.png"
 export const COMPANY_INFO = Object.freeze({
-  FNAME: "Add",
-  LNAME: "God",
+  NAME: "ADD-GOD",
   LEGAL_NAME: "ADD-GOD Digital Pvt. Ltd.",
   ADDRESS: "289, 1st Floor Chaitanya Vihar Phase 2, Main Burja Road Vrindavan- 281121",
   ESTABLISHED_YEAR: 2024,

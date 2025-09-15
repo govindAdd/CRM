@@ -12,28 +12,19 @@ const CreateDepartment = ({ onSuccess }) => {
   };
 
   return (
-    <div className="w-full text-gray-800 dark:text-gray-200 transition-colors">
+    <div className="w-full text-gray-800">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <div
-          className="p-3 bg-gradient-to-r from-purple-200 to-cyan-100 
-                     dark:from-purple-700 dark:to-cyan-800 
-                     text-gray-900 dark:text-gray-100 
-                     rounded-full shadow transition-colors"
-        >
+        <div className="p-3 bg-gradient-to-r from-purple-200 to-cyan-100 text-black rounded-full shadow">
           <FiPlusCircle className="text-2xl" />
         </div>
-        <h2 className="text-2xl font-bold tracking-wide text-gray-800 dark:text-gray-100 transition-colors">
+        <h2 className="text-2xl font-bold tracking-wide text-gray-800">
           Create New Department
         </h2>
       </div>
 
       {/* Form Wrapper */}
-      <div
-        className="rounded-2xl border border-gray-200 dark:border-gray-700 
-                   bg-white dark:bg-gray-900 
-                   p-6 shadow-sm transition-colors"
-      >
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <DepartmentForm
           onSubmit={handleSubmit}
           isLoading={createStatus === "loading"}

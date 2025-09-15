@@ -1,78 +1,74 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import api from "../services/axios";
-import { resetAppState } from "./actions";
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import api from '../services/axios';
+import { resetAppState } from './actions';
 
 // ========== ASYNC THUNKS ==========
 
 // Register
 export const registerUser = createAsyncThunk(
-  "auth/registerUser",
+  'auth/registerUser',
   async (formData, { rejectWithValue }) => {
     try {
-      const res = await api.post("/users/register", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const res = await api.post('/users/register', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       return res.data?.data;
     } catch (err) {
-      return rejectWithValue(
-        err?.response?.data?.message || "Registration failed"
-      );
+      return rejectWithValue(err?.response?.data?.message || 'Registration failed');
     }
   }
 );
 
 // Login
 export const loginUser = createAsyncThunk(
-  "auth/loginUser",
+  'auth/loginUser',
   async (credentials, { rejectWithValue }) => {
     try {
-      const res = await api.post("/users/login", credentials);
+      const res = await api.post('/users/login', credentials);
       const { accessToken, user } = res.data?.data || {};
 
       if (accessToken) {
-        localStorage.setItem("authToken", accessToken); // ✅ Store access token only
+        localStorage.setItem('authToken', accessToken); // ✅ Store access token only
       }
 
       return user;
     } catch (err) {
-      console.error("Login error:", err?.response?.message);
-      return rejectWithValue(err?.response?.statusText || "Login failed");
+      console.error('Login error:', err?.response?.message);
+      return rejectWithValue(err?.response?.statusText || 'Login failed');
     }
   }
 );
 
 // Logout
 export const logoutUser = createAsyncThunk(
-  "auth/logoutUser",
+  'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-      await api.post("/users/logout"); // Refresh token is cleared server-side
+      await api.post('/users/logout'); // Refresh token is cleared server-side
 
-      localStorage.removeItem("authToken"); // ✅ Clear access token
+      localStorage.removeItem('authToken'); // ✅ Clear access token
     } catch (err) {
-      return rejectWithValue(err?.response?.data?.message || "Logout failed");
+      return rejectWithValue(err?.response?.data?.message || 'Logout failed');
     }
   }
 );
 
 // Forgot Password
 export const forgotPasswordUser = createAsyncThunk(
-  "auth/forgotPasswordUser",
+  'auth/forgotPasswordUser',
   async (email, { rejectWithValue }) => {
     try {
-      const res = await api.post("/users/forgot-password", { email });
+      const res = await api.post('/users/forgot-password', { email });
       return res.data?.message;
     } catch (err) {
-      return rejectWithValue(
-        err?.response?.data?.message || "Failed to send reset email"
-      );
+      return rejectWithValue(err?.response?.data?.message || 'Failed to send reset email');
     }
   }
 );
 
 // Reset Password
 export const resetPasswordUser = createAsyncThunk(
-  "auth/resetPasswordUser",
+  'auth/resetPasswordUser',
   async ({ token, password, confirmPassword }, { rejectWithValue }) => {
     try {
       const res = await api.post(`/users/reset-password/${token}`, {
@@ -81,22 +77,7 @@ export const resetPasswordUser = createAsyncThunk(
       });
       return res.data?.message;
     } catch (err) {
-      return rejectWithValue(err?.response?.data?.message || "Reset failed");
-    }
-  }
-);
-
-// Company Info
-export const fetchCompanyInfo = createAsyncThunk(
-  "fetchCompanyInfo",
-  async (_, { rejectWithValue }) => {
-    try {
-      const res = await api.get("/info");
-      return res.data?.data;
-    } catch (err) {
-      return rejectWithValue(
-        err?.response?.data?.message || "Failed to fetch company info"
-      );
+      return rejectWithValue(err?.response?.data?.message || 'Reset failed');
     }
   }
 );
@@ -104,14 +85,13 @@ export const fetchCompanyInfo = createAsyncThunk(
 // ===================== SLICE =====================
 
 const authSlice = createSlice({
-  name: "auth",
+  name: 'auth',
   initialState: {
     user: null,
     loading: false,
     error: null,
     isAuthenticated: false,
     isInitializing: true,
-    companyInfo: null,
   },
   reducers: {
     setUser: (state, action) => {
@@ -217,22 +197,6 @@ const authSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Fetch Company Info
-      .addCase(fetchCompanyInfo.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchCompanyInfo.fulfilled, (state, action) => {
-        state.loading = false;
-        state.companyInfo = action.payload;
-        state.error = null;
-      })
-      .addCase(fetchCompanyInfo.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-        state.companyInfo = null;
-      })
-
       // Reset entire state
       .addCase(resetAppState, () => ({
         user: null,
@@ -245,6 +209,5 @@ const authSlice = createSlice({
 });
 
 // ===================== EXPORTS =====================
-export const { setUser, clearUser, clearError, setInitializing } =
-  authSlice.actions;
+export const { setUser, clearUser, clearError, setInitializing } = authSlice.actions;
 export default authSlice.reducer;
