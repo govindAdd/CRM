@@ -1,0 +1,168 @@
+############################
+# Node.js / Backend
+############################
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+*.log.*
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Runtime data
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*.swo
+*.DS_Store
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Compiled output
+dist/
+build/
+lib/
+.cache/
+.next/
+out/
+.vscode-test/
+
+############################
+# Frontend / React
+############################
+# Dependency directories
+client/node_modules/
+client/package-lock.json
+client/yarn.lock
+
+# Build output
+client/build/
+client/dist/
+client/.cache/
+client/.next/
+client/out/
+
+# Testing
+client/coverage/
+client/jest/
+client/.jest/
+
+############################
+# IDE / OS files
+############################
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Mac system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+############################
+# Mongo / DB
+############################
+dump/
+*.gz
+*.tar
+*.sql
+*.sqlite
+*.db
+
+############################
+# Security
+############################
+# SSL keys / certificates
+*.pem
+*.crt
+*.key
+
+# Firebase / GCP / AWS / Secrets
+*.p12
+*.key.json
+*.credentials
+serviceAccountKey.json
+
+############################
+# Docker / Deployment
+############################
+docker-compose.override.yml
+.docker/
+docker-data/
+*.tar
+
+############################
+# Misc / Advanced
+############################
+*.lock-wscript
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+*.tgz
+
+# Local development
+.envrc
+.nodemonignore
+pm2.log
+pm2-error.log
+
+############################
+# Optional: GitHub Actions / CI
+############################
+.github/workflows/secrets.yml
+.github/secrets/
+.github/token/
+
+############################
+# Optional: Testing / Cypress
+############################
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+
+############################
+# Optional: IntelliJ / JetBrains
+############################
+*.iml
+*.ipr
+*.iws
+.idea/
+
+############################
+# Optional: VS Code
+############################
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# End of FAANG++ MERN .gitignore
